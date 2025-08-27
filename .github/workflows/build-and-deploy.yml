@@ -55,10 +55,10 @@ jobs:
         pip install pytest pytest-cov pytest-flask
         pytest tests/ --cov=ghost_blog_smart --cov=app --cov-report=xml --cov-report=html
       env:
-        GHOST_ADMIN_API_KEY: "test_key"
-        GHOST_API_URL: "https://test.example.com"
-        GEMINI_API_KEY: "test_gemini_key"
-        REPLICATE_API_TOKEN: "r8_test_token"
+        GHOST_ADMIN_API_KEY: "68aaca1251d63700017fb41c:11fef3c43cb82c71aa6d549bd0b2302c2e6ed843a32ee5153348d8e3e9b267a7"
+        GHOST_API_URL: "https://blog.animagent.ai"
+        GEMINI_API_KEY: "AIzaSyATjMBDU_0M1jb0aBeoSQgZxAWYg2z9Dx8"
+        REPLICATE_API_TOKEN: "c72192ecb136caafa562ff2ccf1035ef93d649b5"
         IS_TEST_MODE: "true"
 
     - name: Upload coverage to Codecov

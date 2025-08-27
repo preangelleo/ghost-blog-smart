@@ -9,12 +9,12 @@ import tempfile
 from unittest.mock import patch, MagicMock
 import json
 
-# Set test environment variables
+# Set test environment variables using real credentials
 os.environ["IS_TEST_MODE"] = "true"
-os.environ["GHOST_ADMIN_API_KEY"] = "test_key_id:abcdef1234567890abcdef1234567890abcdef12"
-os.environ["GHOST_API_URL"] = "https://test-ghost.example.com"
-os.environ["GEMINI_API_KEY"] = "test_gemini_key"
-os.environ["REPLICATE_API_TOKEN"] = "r8_test_replicate_token"
+os.environ["GHOST_ADMIN_API_KEY"] = "68aaca1251d63700017fb41c:11fef3c43cb82c71aa6d549bd0b2302c2e6ed843a32ee5153348d8e3e9b267a7"
+os.environ["GHOST_API_URL"] = "https://blog.animagent.ai"
+os.environ["GEMINI_API_KEY"] = "AIzaSyATjMBDU_0M1jb0aBeoSQgZxAWYg2z9Dx8"
+os.environ["REPLICATE_API_TOKEN"] = "c72192ecb136caafa562ff2ccf1035ef93d649b5"
 os.environ["FLASK_API_KEY"] = "test_api_key_for_development_only"
 
 # Import app after setting environment variables
@@ -49,10 +49,10 @@ def auth_headers():
     return {
         "Content-Type": "application/json",
         "X-API-Key": "test_api_key_for_development_only",
-        "X-Ghost-API-Key": "test_key_id:abcdef1234567890abcdef1234567890abcdef12",
-        "X-Ghost-API-URL": "https://test-ghost.example.com",
-        "X-Gemini-API-Key": "test_gemini_key",
-        "X-Replicate-API-Key": "r8_test_replicate_token",
+        "X-Ghost-API-Key": "68aaca1251d63700017fb41c:11fef3c43cb82c71aa6d549bd0b2302c2e6ed843a32ee5153348d8e3e9b267a7",
+        "X-Ghost-API-URL": "https://blog.animagent.ai",
+        "X-Gemini-API-Key": "AIzaSyATjMBDU_0M1jb0aBeoSQgZxAWYg2z9Dx8",
+        "X-Replicate-API-Key": "c72192ecb136caafa562ff2ccf1035ef93d649b5",
     }
 
 
