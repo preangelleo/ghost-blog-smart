@@ -2,10 +2,10 @@ name: Build and Deploy Ghost Blog Smart API
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, main, develop ]
     tags: [ 'v*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ master, main ]
 
 env:
   DOCKER_REGISTRY: betashow
