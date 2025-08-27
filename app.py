@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Ghost Blog Smart Flask API
+Ghost Blog Smart Flask API - FIXED VERSION
 A REST API server for the ghost-blog-smart library with comprehensive blog management capabilities.
+Enhanced with better error handling and validation.
 """
 
 from flask import Flask, request, jsonify
@@ -96,6 +97,28 @@ def standardize_response(
     return jsonify(response), status_code
 
 
+def safe_call_ghost_function(func, **kwargs):
+    """
+    Safely call a ghost_blog_smart function with enhanced error handling
+    """
+    try:
+        result = func(**kwargs)
+        
+        # Handle different response formats
+        if isinstance(result, dict):
+            if result.get("success"):
+                return {"success": True, "data": result}
+            else:
+                return {"success": False, "message": result.get("message", "Operation failed"), "error": result.get("error")}
+        else:
+            # Handle non-dict responses
+            return {"success": True, "data": {"result": result}}
+            
+    except Exception as e:
+        logger.error(f"Error calling {func.__name__}: {str(e)}")
+        return {"success": False, "message": f"Internal error in {func.__name__}: {str(e)}"}
+
+
 # ============================================================================
 # HEALTH CHECK & INFO ENDPOINTS
 # ============================================================================
@@ -107,7 +130,7 @@ def root():
     return standardize_response(
         data={
             "name": "Ghost Blog Smart API",
-            "version": "1.0.0",
+            "version": "1.1.0",  # Updated version
             "description": "REST API for Ghost CMS blog management with AI-powered features",
             "features": [
                 "Smart blog creation with AI enhancement",
@@ -115,6 +138,8 @@ def root():
                 "Comprehensive blog management",
                 "Batch operations",
                 "Multi-language support",
+                "Enhanced error handling",
+                "Better input validation"
             ],
             "endpoints": {
                 "health": "/health",
@@ -122,6 +147,12 @@ def root():
                 "smart_create": "/api/smart-create",
                 "documentation": "See README.md for full API documentation",
             },
+            "improvements": [
+                "Fixed Posts Summary NoneType errors",
+                "Enhanced post ID validation",
+                "Better error handling across all endpoints",
+                "Improved input sanitization"
+            ]
         }
     )
 
@@ -133,10 +164,12 @@ def health_check():
         data={
             "status": "healthy",
             "uptime": "running",
+            "version": "1.1.0",
             "features": {
                 "ghost_integration": True,
                 "ai_enhancement": True,
                 "image_generation": True,
+                "enhanced_error_handling": True,
             },
         }
     )
@@ -154,7 +187,7 @@ def create_post():
     try:
         data = validate_json()
 
-        # Required fields
+        # Required fields validation
         if "title" not in data or "content" not in data:
             return standardize_response(
                 success=False,
@@ -163,11 +196,26 @@ def create_post():
                 status_code=400,
             )
 
+        # Sanitize inputs
+        data["title"] = str(data["title"]).strip()
+        data["content"] = str(data["content"]).strip()
+        
+        if not data["title"] or not data["content"]:
+            return standardize_response(
+                success=False,
+                error="Empty required fields",
+                message="title and content cannot be empty",
+                status_code=400,
+            )
+
+        # Add credentials
+        data.update(_extract_ghost_credentials())
+
         # Call ghost_blog_smart function
-        result = create_ghost_blog_post(**data)
+        result = safe_call_ghost_function(create_ghost_blog_post, **data)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -193,7 +241,7 @@ def smart_create_post():
     try:
         data = validate_json()
 
-        # Required field
+        # Required field validation
         if "user_input" not in data:
             return standardize_response(
                 success=False,
@@ -202,16 +250,30 @@ def smart_create_post():
                 status_code=400,
             )
 
+        # Sanitize input
+        data["user_input"] = str(data["user_input"]).strip()
+        
+        if not data["user_input"]:
+            return standardize_response(
+                success=False,
+                error="Empty user input",
+                message="user_input cannot be empty",
+                status_code=400,
+            )
+
+        # Add credentials
+        data.update(_extract_ghost_credentials())
+
         # Call smart gateway
-        result = smart_blog_gateway(**data)
+        result = safe_call_ghost_function(smart_blog_gateway, **data)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
                 error="Smart blog creation failed",
-                message=result.get("response", "Unknown error"),
+                message=result.get("message", "Unknown error"),
                 status_code=400,
             )
 
@@ -235,23 +297,57 @@ def smart_create_post():
 def get_posts():
     """Get blog posts with optional filtering"""
     try:
-        # Extract query parameters
+        # Extract query parameters with validation
         params = {}
+        
+        # Validate and convert limit
         if request.args.get("limit"):
-            params["limit"] = int(request.args.get("limit"))
-        if request.args.get("status"):
-            params["status"] = request.args.get("status")
-        if request.args.get("featured"):
-            params["featured"] = request.args.get("featured").lower() == "true"
+            try:
+                limit = int(request.args.get("limit"))
+                params["limit"] = max(1, min(limit, 100))  # Clamp between 1-100
+            except ValueError:
+                return standardize_response(
+                    success=False,
+                    error="Invalid parameter",
+                    message="limit must be a valid integer between 1 and 100",
+                    status_code=400,
+                )
 
-        # Add ghost credentials from environment or headers
+        # Validate status
+        if request.args.get("status"):
+            status = request.args.get("status").lower()
+            if status not in ["published", "draft", "scheduled", "all"]:
+                return standardize_response(
+                    success=False,
+                    error="Invalid parameter",
+                    message="status must be one of: published, draft, scheduled, all",
+                    status_code=400,
+                )
+            params["status"] = status
+
+        # Validate featured
+        if request.args.get("featured"):
+            featured_str = request.args.get("featured").lower()
+            if featured_str in ["true", "1", "yes"]:
+                params["featured"] = True
+            elif featured_str in ["false", "0", "no"]:
+                params["featured"] = False
+            else:
+                return standardize_response(
+                    success=False,
+                    error="Invalid parameter",
+                    message="featured must be true or false",
+                    status_code=400,
+                )
+
+        # Add ghost credentials
         params.update(_extract_ghost_credentials())
 
         # Call function
-        result = get_ghost_posts(**params)
+        result = safe_call_ghost_function(get_ghost_posts, **params)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -277,26 +373,48 @@ def get_posts_advanced():
     try:
         params = {}
 
-        # Extract query parameters
-        for key in ["search", "tag", "author", "limit", "status", "visibility"]:
+        # Extract and validate query parameters
+        for key in ["search", "tag", "author", "status", "visibility"]:
             if request.args.get(key):
-                if key == "limit":
-                    params[key] = int(request.args.get(key))
-                else:
-                    params[key] = request.args.get(key)
+                value = str(request.args.get(key)).strip()
+                if value:  # Only add non-empty values
+                    params[key] = value
 
-        # Date filtering
-        if request.args.get("published_after"):
-            params["published_after"] = request.args.get("published_after")
-        if request.args.get("published_before"):
-            params["published_before"] = request.args.get("published_before")
+        # Validate and convert limit
+        if request.args.get("limit"):
+            try:
+                limit = int(request.args.get("limit"))
+                params["limit"] = max(1, min(limit, 100))  # Clamp between 1-100
+            except ValueError:
+                return standardize_response(
+                    success=False,
+                    error="Invalid parameter",
+                    message="limit must be a valid integer",
+                    status_code=400,
+                )
+
+        # Date filtering with validation
+        for date_param in ["published_after", "published_before"]:
+            if request.args.get(date_param):
+                date_str = request.args.get(date_param)
+                try:
+                    # Validate date format
+                    datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                    params[date_param] = date_str
+                except ValueError:
+                    return standardize_response(
+                        success=False,
+                        error="Invalid parameter",
+                        message=f"{date_param} must be in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)",
+                        status_code=400,
+                    )
 
         params.update(_extract_ghost_credentials())
 
-        result = get_ghost_posts_advanced(**params)
+        result = safe_call_ghost_function(get_ghost_posts_advanced, **params)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -320,19 +438,30 @@ def get_posts_advanced():
 def get_post_details(post_id):
     """Get detailed information about a specific post"""
     try:
-        params = {"post_id": post_id}
+        # Validate post_id
+        if not post_id or not str(post_id).strip():
+            return standardize_response(
+                success=False,
+                error="Invalid post ID",
+                message="Post ID cannot be empty",
+                status_code=400,
+            )
+
+        params = {"post_id": str(post_id).strip()}
         params.update(_extract_ghost_credentials())
 
-        result = get_ghost_post_details(**params)
+        result = safe_call_ghost_function(get_ghost_post_details, **params)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
+            # Return 404 for post not found, 400 for other errors
+            status_code = 404 if "not found" in result.get("message", "").lower() else 400
             return standardize_response(
                 success=False,
                 error="Failed to retrieve post details",
                 message=result.get("message", "Post not found"),
-                status_code=404,
+                status_code=status_code,
             )
 
     except Exception as e:
@@ -355,14 +484,33 @@ def get_post_details(post_id):
 def update_post(post_id):
     """Update an existing blog post"""
     try:
+        # Validate post_id
+        if not post_id or not str(post_id).strip():
+            return standardize_response(
+                success=False,
+                error="Invalid post ID",
+                message="Post ID cannot be empty",
+                status_code=400,
+            )
+
         data = validate_json()
-        data["post_id"] = post_id
+        
+        # Ensure we have some data to update
+        if not data:
+            return standardize_response(
+                success=False,
+                error="No data provided",
+                message="Request body must contain fields to update",
+                status_code=400,
+            )
+
+        data["post_id"] = str(post_id).strip()
         data.update(_extract_ghost_credentials())
 
-        result = update_ghost_post(**data)
+        result = safe_call_ghost_function(update_ghost_post, **data)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -386,14 +534,23 @@ def update_post(post_id):
 def update_post_image(post_id):
     """Update the feature image of a blog post"""
     try:
+        # Validate post_id
+        if not post_id or not str(post_id).strip():
+            return standardize_response(
+                success=False,
+                error="Invalid post ID",
+                message="Post ID cannot be empty",
+                status_code=400,
+            )
+
         data = validate_json()
-        data["post_id"] = post_id
+        data["post_id"] = str(post_id).strip()
         data.update(_extract_ghost_credentials())
 
-        result = update_ghost_post_image(**data)
+        result = safe_call_ghost_function(update_ghost_post_image, **data)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -422,13 +579,22 @@ def update_post_image(post_id):
 def delete_post(post_id):
     """Delete a blog post"""
     try:
-        params = {"post_id": post_id}
+        # Validate post_id
+        if not post_id or not str(post_id).strip():
+            return standardize_response(
+                success=False,
+                error="Invalid post ID",
+                message="Post ID cannot be empty",
+                status_code=400,
+            )
+
+        params = {"post_id": str(post_id).strip()}
         params.update(_extract_ghost_credentials())
 
-        result = delete_ghost_post(**params)
+        result = safe_call_ghost_function(delete_ghost_post, **params)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -467,12 +633,35 @@ def batch_post_details():
                 status_code=400,
             )
 
+        post_ids = data["post_ids"]
+        
+        # Validate post_ids is a list
+        if not isinstance(post_ids, list):
+            return standardize_response(
+                success=False,
+                error="Invalid data type",
+                message="post_ids must be an array",
+                status_code=400,
+            )
+
+        # Validate and clean post IDs
+        valid_post_ids = [str(pid).strip() for pid in post_ids if pid and str(pid).strip()]
+        
+        if not valid_post_ids:
+            return standardize_response(
+                success=False,
+                error="No valid post IDs",
+                message="post_ids array must contain at least one valid ID",
+                status_code=400,
+            )
+
+        data["post_ids"] = valid_post_ids
         data.update(_extract_ghost_credentials())
 
-        result = batch_get_post_details(**data)
+        result = safe_call_ghost_function(batch_get_post_details, **data)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -494,18 +683,48 @@ def batch_post_details():
 @app.route("/api/posts/summary", methods=["GET"])
 @require_api_key
 def posts_summary():
-    """Get posts summary statistics"""
+    """Get posts summary statistics - FIXED VERSION"""
     try:
         params = {}
+        
+        # Handle days parameter properly
         if request.args.get("days"):
-            params["days"] = int(request.args.get("days"))
+            try:
+                days = int(request.args.get("days"))
+                if days < 0:
+                    return standardize_response(
+                        success=False,
+                        error="Invalid parameter",
+                        message="days must be a positive integer",
+                        status_code=400,
+                    )
+                params["days"] = days
+            except ValueError:
+                return standardize_response(
+                    success=False,
+                    error="Invalid parameter",
+                    message="days must be a valid integer",
+                    status_code=400,
+                )
+
+        # Add status filter if provided
+        if request.args.get("status"):
+            status = request.args.get("status").lower()
+            if status not in ["published", "draft", "scheduled", "all"]:
+                return standardize_response(
+                    success=False,
+                    error="Invalid parameter",
+                    message="status must be one of: published, draft, scheduled, all",
+                    status_code=400,
+                )
+            params["status"] = status
 
         params.update(_extract_ghost_credentials())
 
-        result = get_posts_summary(**params)
+        result = safe_call_ghost_function(get_posts_summary, **params)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -532,20 +751,35 @@ def posts_summary():
 @app.route("/api/posts/search/by-date-pattern", methods=["GET"])
 @require_api_key
 def search_by_date_pattern():
-    """Search posts by date pattern"""
+    """Search posts by date pattern - FIXED VERSION"""
     try:
         params = {}
+        
+        # Get pattern parameter
         if request.args.get("pattern"):
-            params["pattern"] = request.args.get("pattern")
+            pattern = str(request.args.get("pattern")).strip()
+            if pattern:
+                params["pattern"] = pattern
+        
+        # Validate and convert limit
         if request.args.get("limit"):
-            params["limit"] = int(request.args.get("limit"))
+            try:
+                limit = int(request.args.get("limit"))
+                params["limit"] = max(1, min(limit, 100))  # Clamp between 1-100
+            except ValueError:
+                return standardize_response(
+                    success=False,
+                    error="Invalid parameter",
+                    message="limit must be a valid integer",
+                    status_code=400,
+                )
 
         params.update(_extract_ghost_credentials())
 
-        result = find_posts_by_date_pattern(**params)
+        result = safe_call_ghost_function(find_posts_by_date_pattern, **params)
 
         if result.get("success"):
-            return standardize_response(data=result)
+            return standardize_response(data=result.get("data"))
         else:
             return standardize_response(
                 success=False,
@@ -650,7 +884,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
 
-    logger.info(f"Starting Ghost Blog Smart API on port {port}")
+    logger.info(f"Starting Ghost Blog Smart API v1.1.0 on port {port}")
     logger.info(f"Debug mode: {debug}")
     logger.info(f"API Key protection: {'Enabled' if REQUIRED_API_KEY else 'Disabled'}")
 
