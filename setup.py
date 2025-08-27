@@ -15,10 +15,10 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="ghost-blog-smart",
-    version="1.0.16",  # Unified examples + simplified README with focus on features
+    version="1.1.1",  # Fixed get_posts_summary bug + Flask API + Docker image + comprehensive testing
     author="leowang.net",
     author_email="me@leowang.net",
-    description="A powerful Python API for creating Ghost CMS blog posts with AI-powered features",
+    description="A powerful Python library and REST API for creating Ghost CMS blog posts with AI-powered features including Flask API and Docker deployment",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/preangelleo/ghost-blog-smart",
