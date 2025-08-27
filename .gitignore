@@ -89,8 +89,10 @@ test_credentials.py
 comprehensive_test.py
 .env.test
 
-# Docker
-.dockerignore
+# Generated content and temporary files
+generated_images/
+deploy.sh
+DOCKER_PUBLISH.md
 
 # Python virtual environments
 *.pyc
