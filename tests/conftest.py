@@ -11,11 +11,11 @@ import json
 
 # Set test environment variables
 os.environ["IS_TEST_MODE"] = "true"
-os.environ["GHOST_ADMIN_API_KEY"] = "test_key_id:test_secret_key"
+os.environ["GHOST_ADMIN_API_KEY"] = "test_key_id:abcdef1234567890abcdef1234567890abcdef12"
 os.environ["GHOST_API_URL"] = "https://test-ghost.example.com"
 os.environ["GEMINI_API_KEY"] = "test_gemini_key"
 os.environ["REPLICATE_API_TOKEN"] = "r8_test_replicate_token"
-os.environ["FLASK_API_KEY"] = "test_api_key_for_auth"
+os.environ["FLASK_API_KEY"] = "test_api_key_for_development_only"
 
 # Import app after setting environment variables
 from app import app as flask_app
@@ -48,8 +48,8 @@ def auth_headers():
     """Headers with API key for authenticated requests"""
     return {
         "Content-Type": "application/json",
-        "X-API-Key": "test_api_key_for_auth",
-        "X-Ghost-API-Key": "test_key_id:test_secret_key",
+        "X-API-Key": "test_api_key_for_development_only",
+        "X-Ghost-API-Key": "test_key_id:abcdef1234567890abcdef1234567890abcdef12",
         "X-Ghost-API-URL": "https://test-ghost.example.com",
         "X-Gemini-API-Key": "test_gemini_key",
         "X-Replicate-API-Key": "r8_test_replicate_token",
