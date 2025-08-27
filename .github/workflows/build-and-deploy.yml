@@ -1,0 +1,269 @@
+name: Build and Deploy Ghost Blog Smart API
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKER_REGISTRY: betashow
+  IMAGE_NAME: ghost-blog-smart-api
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-api.txt
+        pip install -e .
+
+    - name: Run linting
+      run: |
+        pip install flake8 black
+        # Lint the code
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Check code formatting
+        black --check --diff .
+
+    - name: Run tests
+      run: |
+        pip install pytest pytest-cov pytest-flask
+        pytest tests/ --cov=ghost_blog_smart --cov=app --cov-report=xml --cov-report=html
+      env:
+        GHOST_ADMIN_API_KEY: "test_key"
+        GHOST_API_URL: "https://test.example.com"
+        GEMINI_API_KEY: "test_gemini_key"
+        REPLICATE_API_TOKEN: "r8_test_token"
+        IS_TEST_MODE: "true"
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.11'
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install security tools
+      run: |
+        pip install safety bandit
+
+    - name: Run safety check
+      run: safety check --json
+
+    - name: Run bandit security scan
+      run: bandit -r ghost_blog_smart/ app.py -f json
+
+  build:
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ env.DOCKER_REGISTRY }}
+        password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix=sha-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          VCS_REF=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
+
+  test-docker-image:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+
+    steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Test Docker image
+      run: |
+        # Pull the built image
+        docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        
+        # Run basic functionality tests
+        docker run --rm -d --name ghost-api-test \
+          -e FLASK_ENV=production \
+          -e IS_TEST_MODE=true \
+          -p 5000:5000 \
+          ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        
+        # Wait for container to start
+        sleep 10
+        
+        # Test health endpoint
+        curl -f http://localhost:5000/health || exit 1
+        
+        # Test API info endpoint
+        curl -f http://localhost:5000/ || exit 1
+        
+        # Stop test container
+        docker stop ghost-api-test
+
+    - name: Test Docker Compose
+      run: |
+        # Create a minimal docker-compose for testing
+        cat > docker-compose.test.yml << EOF
+        version: '3.8'
+        services:
+          api:
+            image: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ports:
+              - "5001:5000"
+            environment:
+              - FLASK_ENV=production
+              - IS_TEST_MODE=true
+        EOF
+        
+        # Start with docker-compose
+        docker-compose -f docker-compose.test.yml up -d
+        sleep 15
+        
+        # Test the service
+        curl -f http://localhost:5001/health || exit 1
+        
+        # Cleanup
+        docker-compose -f docker-compose.test.yml down
+
+  deploy-staging:
+    needs: [test-docker-image]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+    - name: Deploy to staging
+      run: |
+        echo "🚀 Deploying to staging environment"
+        echo "Image: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:develop"
+        # Add your staging deployment commands here
+        # For example, deploy to your staging server or cloud platform
+
+  deploy-production:
+    needs: [test-docker-image]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+
+    steps:
+    - name: Deploy to production
+      run: |
+        echo "🚀 Deploying to production environment"
+        echo "Image: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
+        # Add your production deployment commands here
+
+  create-release:
+    needs: [test-docker-image]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Generate changelog since last tag
+        echo "## Changes" > changelog.md
+        git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> changelog.md
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Ghost Blog Smart API ${{ github.ref_name }}
+        body_path: changelog.md
+        draft: false
+        prerelease: false
+
+  notify:
+    needs: [deploy-production, deploy-staging]
+    runs-on: ubuntu-latest
+    if: always() && (needs.deploy-production.result == 'success' || needs.deploy-staging.result == 'success')
+
+    steps:
+    - name: Notify success
+      run: |
+        if [[ "${{ needs.deploy-production.result }}" == "success" ]]; then
+          echo "✅ Production deployment successful!"
+        elif [[ "${{ needs.deploy-staging.result }}" == "success" ]]; then
+          echo "✅ Staging deployment successful!"
+        fi
+        # Add notification logic here (Slack, Discord, email, etc.)
