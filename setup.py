@@ -15,7 +15,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="ghost-blog-smart",
-    version="1.1.2",  # Enhanced error handling + timeout documentation + comprehensive README restructure
+    version="1.1.3",  # Fixed API error handling for 404 responses + comprehensive testing improvements
     author="leowang.net",
     author_email="me@leowang.net",
     description="A powerful Python library and REST API for creating Ghost CMS blog posts with AI-powered features including Flask API and Docker deployment",
