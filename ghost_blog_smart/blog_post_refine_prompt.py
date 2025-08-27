@@ -181,15 +181,16 @@ The AI revolution is here, but its ultimate impact depends on how thoughtfully w
 
 Remember: Transform ANY input into a polished blog post that's immediately ready for publication."""
 
+
 def get_refine_prompt_with_language(target_language: str = None) -> str:
     """
     Get the blog post refinement prompt with language directive
-    
+
     Args:
-        target_language: The target language for the blog post. 
+        target_language: The target language for the blog post.
                         If None or empty, uses original language from input.
                         Examples: "English", "Chinese", "Spanish", etc.
-    
+
     Returns:
         The system prompt with language placeholder replaced
     """
@@ -199,8 +200,10 @@ def get_refine_prompt_with_language(target_language: str = None) -> str:
     else:
         # Default: use original language
         language_directive = "Maintain the original language of the input content. Do not translate - preserve the exact language used in the source material."
-    
+
     # Replace the placeholder
-    prompt = BLOG_POST_REFINE_SYSTEM_PROMPT.replace("{{TARGET_LANGUAGE}}", language_directive)
-    
+    prompt = BLOG_POST_REFINE_SYSTEM_PROMPT.replace(
+        "{{TARGET_LANGUAGE}}", language_directive
+    )
+
     return prompt

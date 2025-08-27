@@ -20,8 +20,8 @@ from .main_functions import create_ghost_blog_post
 load_dotenv()
 
 # Configuration
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-GEMINI_MODEL = 'gemini-2.0-flash-exp'
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = "gemini-2.0-flash-exp"
 
 # ================================================================================
 # STRUCTURED OUTPUT SCHEMA - For blog rewriting
@@ -30,39 +30,36 @@ GEMINI_MODEL = 'gemini-2.0-flash-exp'
 BLOG_STRUCTURE_SCHEMA = {
     "type": "object",
     "properties": {
-        "title": {
-            "type": "string",
-            "description": "Engaging, SEO-friendly blog title"
-        },
+        "title": {"type": "string", "description": "Engaging, SEO-friendly blog title"},
         "content": {
             "type": "string",
-            "description": "Full blog content in markdown format with proper structure"
+            "description": "Full blog content in markdown format with proper structure",
         },
         "excerpt": {
             "type": "string",
-            "description": "Brief summary (max 299 chars) for previews and search results"
+            "description": "Brief summary (max 299 chars) for previews and search results",
         },
         "tags": {
             "type": "array",
             "items": {"type": "string"},
             "description": "Relevant tags for categorization",
             "minItems": 1,
-            "maxItems": 5
+            "maxItems": 5,
         },
         "target_language": {
             "type": "string",
-            "description": "Target language for the content (e.g., 'English', 'Chinese')"
+            "description": "Target language for the content (e.g., 'English', 'Chinese')",
         },
         "use_ai_image": {
             "type": "boolean",
-            "description": "Whether to generate AI feature image"
+            "description": "Whether to generate AI feature image",
         },
         "image_prompt": {
             "type": "string",
-            "description": "Custom prompt for AI image generation if use_ai_image is true"
-        }
+            "description": "Custom prompt for AI image generation if use_ai_image is true",
+        },
     },
-    "required": ["title", "content", "excerpt", "tags"]
+    "required": ["title", "content", "excerpt", "tags"],
 }
 
 # System prompt for structured output - Combines blog refinement and image generation
@@ -193,39 +190,36 @@ function_declarations = [
         "parameters": {
             "type": "object",
             "properties": {
-                "title": {
-                    "type": "string",
-                    "description": "The blog post title"
-                },
+                "title": {"type": "string", "description": "The blog post title"},
                 "content": {
                     "type": "string",
-                    "description": "The blog post content (markdown or plain text)"
+                    "description": "The blog post content (markdown or plain text)",
                 },
                 "excerpt": {
                     "type": "string",
-                    "description": "Brief summary of the post (optional, max 299 chars)"
+                    "description": "Brief summary of the post (optional, max 299 chars)",
                 },
                 "tags": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Tags for the post"
+                    "description": "Tags for the post",
                 },
                 "status": {
                     "type": "string",
                     "enum": ["draft", "published"],
-                    "description": "Publishing status"
+                    "description": "Publishing status",
                 },
                 "use_generated_feature_image": {
                     "type": "boolean",
-                    "description": "Generate AI feature image"
+                    "description": "Generate AI feature image",
                 },
                 "target_language": {
                     "type": "string",
-                    "description": "Target language for content translation (optional)"
-                }
+                    "description": "Target language for content translation (optional)",
+                },
             },
-            "required": ["title", "content"]
-        }
+            "required": ["title", "content"],
+        },
     },
     {
         "name": "rewrite_and_publish_blog",
@@ -235,30 +229,31 @@ function_declarations = [
             "properties": {
                 "raw_content": {
                     "type": "string",
-                    "description": "The raw content or ideas that need to be rewritten into a blog post"
+                    "description": "The raw content or ideas that need to be rewritten into a blog post",
                 },
                 "guidance": {
                     "type": "string",
-                    "description": "Additional guidance for rewriting (tone, style, focus areas)"
+                    "description": "Additional guidance for rewriting (tone, style, focus areas)",
                 },
                 "preferred_language": {
                     "type": "string",
-                    "description": "Preferred language for the final blog post"
+                    "description": "Preferred language for the final blog post",
                 },
                 "status": {
                     "type": "string",
                     "enum": ["draft", "published"],
-                    "description": "Publishing status after rewriting"
-                }
+                    "description": "Publishing status after rewriting",
+                },
             },
-            "required": ["raw_content"]
-        }
-    }
+            "required": ["raw_content"],
+        },
+    },
 ]
 
 # ================================================================================
 # CORE FUNCTIONS
 # ================================================================================
+
 
 def direct_publish_blog(**kwargs) -> Dict[str, Any]:
     """
@@ -268,73 +263,76 @@ def direct_publish_blog(**kwargs) -> Dict[str, Any]:
     try:
         # Remove any gateway-specific parameters before passing to create function
         publish_params = {
-            'title': kwargs.get('title'),
-            'content': kwargs.get('content'),
-            'excerpt': kwargs.get('excerpt', ''),
-            'tags': kwargs.get('tags', ['Blog']),
-            'status': kwargs.get('status', 'published'),
-            'use_generated_feature_image': kwargs.get('use_generated_feature_image', False),
-            'target_language': kwargs.get('target_language'),
-            'auto_format': True,
+            "title": kwargs.get("title"),
+            "content": kwargs.get("content"),
+            "excerpt": kwargs.get("excerpt", ""),
+            "tags": kwargs.get("tags", ["Blog"]),
+            "status": kwargs.get("status", "published"),
+            "use_generated_feature_image": kwargs.get(
+                "use_generated_feature_image", False
+            ),
+            "target_language": kwargs.get("target_language"),
+            "auto_format": True,
             # Pass through API credentials
-            'ghost_admin_api_key': kwargs.get('ghost_admin_api_key'),
-            'ghost_api_url': kwargs.get('ghost_api_url'),
-            'gemini_api_key': kwargs.get('gemini_api_key'),
-            'is_test': kwargs.get('is_test', False)
+            "ghost_admin_api_key": kwargs.get("ghost_admin_api_key"),
+            "ghost_api_url": kwargs.get("ghost_api_url"),
+            "gemini_api_key": kwargs.get("gemini_api_key"),
+            "is_test": kwargs.get("is_test", False),
         }
-        
+
         # Remove None values
         publish_params = {k: v for k, v in publish_params.items() if v is not None}
-        
+
         # Call the actual blog creation function
         result = create_ghost_blog_post(**publish_params)
-        
-        if result['success']:
+
+        if result["success"]:
             # Extract metadata that was actually used for direct publish
             direct_publish_data = {
-                'title': publish_params.get('title'),
-                'excerpt': publish_params.get('excerpt', ''),
-                'tags': publish_params.get('tags', []),
-                'content': publish_params.get('content', ''),
-                'target_language': publish_params.get('target_language'),
-                'use_ai_image': publish_params.get('use_generated_feature_image', False)
+                "title": publish_params.get("title"),
+                "excerpt": publish_params.get("excerpt", ""),
+                "tags": publish_params.get("tags", []),
+                "content": publish_params.get("content", ""),
+                "target_language": publish_params.get("target_language"),
+                "use_ai_image": publish_params.get(
+                    "use_generated_feature_image", False
+                ),
             }
-            
+
             return {
-                'success': True,
-                'response': f"✅ Blog post published successfully!\n🔗 URL: {result['url']}\n📝 Post ID: {result['post_id']}",
-                'url': result['url'],
-                'post_id': result['post_id'],
-                'generated_title': direct_publish_data['title'],
-                'generated_excerpt': direct_publish_data['excerpt'],
-                'generated_tags': direct_publish_data['tags'],
-                'direct_publish_data': direct_publish_data  # Include metadata for consistency
+                "success": True,
+                "response": f"✅ Blog post published successfully!\n🔗 URL: {result['url']}\n📝 Post ID: {result['post_id']}",
+                "url": result["url"],
+                "post_id": result["post_id"],
+                "generated_title": direct_publish_data["title"],
+                "generated_excerpt": direct_publish_data["excerpt"],
+                "generated_tags": direct_publish_data["tags"],
+                "direct_publish_data": direct_publish_data,  # Include metadata for consistency
             }
         else:
             # Provide detailed error information
-            error_msg = result.get('message', 'No error message provided')
+            error_msg = result.get("message", "No error message provided")
             detailed_error = f"❌ Failed to publish: {error_msg}"
-            
+
             # Add debug information if available
-            if 'ghost_admin_api_key' not in publish_params:
+            if "ghost_admin_api_key" not in publish_params:
                 detailed_error += "\n🔧 Debug: Missing ghost_admin_api_key"
-            if 'ghost_api_url' not in publish_params:
+            if "ghost_api_url" not in publish_params:
                 detailed_error += "\n🔧 Debug: Missing ghost_api_url"
-            
-            print(f"🔍 Debug - Direct publish params keys: {list(publish_params.keys())}")
+
+            print(
+                f"🔍 Debug - Direct publish params keys: {list(publish_params.keys())}"
+            )
             print(f"🔍 Debug - Result: {result}")
-            
+
             return {
-                'success': False,
-                'response': detailed_error,
-                'debug_result': result  # Include full result for debugging
+                "success": False,
+                "response": detailed_error,
+                "debug_result": result,  # Include full result for debugging
             }
-            
+
     except Exception as e:
-        return {
-            'success': False,
-            'response': f"❌ Error in direct publish: {str(e)}"
-        }
+        return {"success": False, "response": f"❌ Error in direct publish: {str(e)}"}
 
 
 def rewrite_and_publish_blog(**kwargs) -> Dict[str, Any]:
@@ -343,11 +341,11 @@ def rewrite_and_publish_blog(**kwargs) -> Dict[str, Any]:
     This is called when content needs enhancement or parameters are missing.
     """
     try:
-        raw_content = kwargs.get('raw_content', '')
-        guidance = kwargs.get('guidance', '')
-        preferred_language = kwargs.get('preferred_language', '')
-        status = kwargs.get('status', 'published')
-        
+        raw_content = kwargs.get("raw_content", "")
+        guidance = kwargs.get("guidance", "")
+        preferred_language = kwargs.get("preferred_language", "")
+        status = kwargs.get("status", "published")
+
         # Prepare the user content for structured output
         user_input = f"""Please transform this into a complete blog post:
 
@@ -357,120 +355,127 @@ Content/Ideas:
 {f"Additional Guidance: {guidance}" if guidance else ""}
 {f"Target Language: {preferred_language}" if preferred_language else ""}
 """
-        
+
         print("🔄 Rewriting content with AI enhancement...")
-        
+
         # Generate structured output
-        gemini_api_key = kwargs.get('gemini_api_key') or GEMINI_API_KEY
+        gemini_api_key = kwargs.get("gemini_api_key") or GEMINI_API_KEY
         structured_result = gemini_structured_output_with_schema(
             user_content=user_input,
             system_prompt=BLOG_REWRITE_SYSTEM_PROMPT,
             json_schema=BLOG_STRUCTURE_SCHEMA,
             api_key=gemini_api_key,
-            model=GEMINI_MODEL
+            model=GEMINI_MODEL,
         )
-        
-        if not structured_result['success']:
+
+        if not structured_result["success"]:
             return {
-                'success': False,
-                'response': f"❌ Failed to rewrite content: {structured_result['message']}"
+                "success": False,
+                "response": f"❌ Failed to rewrite content: {structured_result['message']}",
             }
-        
+
         # Extract the rewritten blog data
-        blog_data = structured_result['data']
-        
+        blog_data = structured_result["data"]
+
         print("✅ Content rewritten successfully")
         print(f"📝 Title: {blog_data['title']}")
         print(f"📄 Excerpt: {blog_data['excerpt']}")
         print(f"🏷️ Tags: {', '.join(blog_data['tags'])}")
-        
+
         # Prepare parameters for publishing
         publish_params = {
-            'title': blog_data['title'],
-            'content': blog_data['content'],
-            'excerpt': blog_data['excerpt'],
-            'tags': blog_data['tags'],
-            'status': status,
-            'auto_format': False  # CRITICAL: Content is already perfectly formatted by AI
+            "title": blog_data["title"],
+            "content": blog_data["content"],
+            "excerpt": blog_data["excerpt"],
+            "tags": blog_data["tags"],
+            "status": status,
+            "auto_format": False,  # CRITICAL: Content is already perfectly formatted by AI
         }
-        
+
         # CRITICAL FIX: Pass through API credentials from kwargs
         api_credentials = {}
-        for key in ['ghost_admin_api_key', 'ghost_api_url', 'gemini_api_key', 'is_test']:
+        for key in [
+            "ghost_admin_api_key",
+            "ghost_api_url",
+            "gemini_api_key",
+            "is_test",
+        ]:
             if key in kwargs:
                 api_credentials[key] = kwargs[key]
-        
+
         # Add API credentials to publish_params
         publish_params.update(api_credentials)
-        
+
         # Handle image generation
-        if blog_data.get('use_ai_image', False):
+        if blog_data.get("use_ai_image", False):
             # Use the AI-generated image prompt directly (no further AI processing needed)
-            publish_params['use_generated_feature_image'] = True
-            if blog_data.get('image_prompt'):
+            publish_params["use_generated_feature_image"] = True
+            if blog_data.get("image_prompt"):
                 # Pass the complete, optimized prompt directly to image generation
-                publish_params['image_generation_prompt'] = blog_data['image_prompt']
+                publish_params["image_generation_prompt"] = blog_data["image_prompt"]
                 # Disable any auto-generation of image prompt since we have a perfect one
-                publish_params['auto_generate_image_prompt'] = False
+                publish_params["auto_generate_image_prompt"] = False
         else:
-            publish_params['use_generated_feature_image'] = False
-        
+            publish_params["use_generated_feature_image"] = False
+
         # Set target language if specified (but no translation needed - content is already in correct language)
-        if blog_data.get('target_language'):
-            publish_params['target_language'] = blog_data['target_language']
-        
+        if blog_data.get("target_language"):
+            publish_params["target_language"] = blog_data["target_language"]
+
         # Debug: Print what we're sending (without sensitive info)
-        debug_info = {k: v for k, v in publish_params.items() if 'api_key' not in k.lower()}
+        debug_info = {
+            k: v for k, v in publish_params.items() if "api_key" not in k.lower()
+        }
         print(f"📤 Publishing blog post with params: {list(debug_info.keys())}")
-        
+
         # Publish the rewritten blog
         result = create_ghost_blog_post(**publish_params)
-        
-        if result['success']:
+
+        if result["success"]:
             return {
-                'success': True,
-                'response': f"✅ Blog rewritten and published successfully!\n🔗 URL: {result['url']}\n📝 Post ID: {result['post_id']}\n📊 Rewrote {len(raw_content)} chars → {len(blog_data['content'])} chars",
-                'url': result['url'],
-                'post_id': result['post_id'],
-                'generated_title': blog_data['title'],
-                'generated_excerpt': blog_data['excerpt'],
-                'generated_tags': blog_data['tags'],
-                'rewritten_data': blog_data  # Keep this for backward compatibility
+                "success": True,
+                "response": f"✅ Blog rewritten and published successfully!\n🔗 URL: {result['url']}\n📝 Post ID: {result['post_id']}\n📊 Rewrote {len(raw_content)} chars → {len(blog_data['content'])} chars",
+                "url": result["url"],
+                "post_id": result["post_id"],
+                "generated_title": blog_data["title"],
+                "generated_excerpt": blog_data["excerpt"],
+                "generated_tags": blog_data["tags"],
+                "rewritten_data": blog_data,  # Keep this for backward compatibility
             }
         else:
             # Provide detailed error information
-            error_msg = result.get('message', 'No error message provided')
+            error_msg = result.get("message", "No error message provided")
             detailed_error = f"❌ Failed to publish rewritten blog: {error_msg}"
-            
+
             # Add debug information if available
-            if 'ghost_admin_api_key' not in publish_params:
+            if "ghost_admin_api_key" not in publish_params:
                 detailed_error += "\n🔧 Debug: Missing ghost_admin_api_key"
-            if 'ghost_api_url' not in publish_params:
+            if "ghost_api_url" not in publish_params:
                 detailed_error += "\n🔧 Debug: Missing ghost_api_url"
-            
+
             print(f"🔍 Debug - Publish params keys: {list(publish_params.keys())}")
             print(f"🔍 Debug - Result: {result}")
-            
+
             return {
-                'success': False,
-                'response': detailed_error,
-                'debug_result': result  # Include full result for debugging
+                "success": False,
+                "response": detailed_error,
+                "debug_result": result,  # Include full result for debugging
             }
-            
+
     except Exception as e:
         return {
-            'success': False,
-            'response': f"❌ Error in rewrite and publish: {str(e)}"
+            "success": False,
+            "response": f"❌ Error in rewrite and publish: {str(e)}",
         }
 
 
 def gemini_structured_output_with_schema(
-    user_content: str, 
-    system_prompt: str, 
+    user_content: str,
+    system_prompt: str,
     json_schema: dict,
     model: str = None,
     api_key: str = None,
-    max_retries: int = 3
+    max_retries: int = 3,
 ) -> Dict[str, Any]:
     """
     Generate structured output using Gemini that conforms to JSON Schema.
@@ -478,18 +483,18 @@ def gemini_structured_output_with_schema(
     """
     if not model:
         model = GEMINI_MODEL
-    
+
     if not api_key:
         api_key = GEMINI_API_KEY
         if not api_key:
             return {
-                'success': False,
-                'data': None,
-                'message': 'GEMINI_API_KEY not found',
-                'response_time': 0,
-                'retries_used': 0
+                "success": False,
+                "data": None,
+                "message": "GEMINI_API_KEY not found",
+                "response_time": 0,
+                "retries_used": 0,
             }
-    
+
     # Build complete prompt with JSON Schema
     full_prompt = f"""{system_prompt}
 
@@ -505,85 +510,86 @@ IMPORTANT:
 
 User Input:
 {user_content}"""
-    
+
     start_time = time.time()
-    
+
     for attempt in range(max_retries):
         try:
             # Configure and create model
             genai.configure(api_key=api_key)
             model_instance = genai.GenerativeModel(model)
-            
+
             # Generate response (updated API)
             response = model_instance.generate_content(
                 full_prompt,
                 generation_config=genai.GenerationConfig(
                     temperature=0.3,
                     top_p=0.9,
-                )
+                ),
             )
-            
-            if response and hasattr(response, 'text') and response.text:
+
+            if response and hasattr(response, "text") and response.text:
                 try:
                     # Clean markdown code blocks if present
                     response_text = response.text.strip()
-                    if response_text.startswith('```json'):
+                    if response_text.startswith("```json"):
                         response_text = response_text[7:]
-                        if response_text.endswith('```'):
+                        if response_text.endswith("```"):
                             response_text = response_text[:-3]
-                    elif response_text.startswith('```'):
+                    elif response_text.startswith("```"):
                         response_text = response_text[3:]
-                        if response_text.endswith('```'):
+                        if response_text.endswith("```"):
                             response_text = response_text[:-3]
-                    
+
                     # Clean control characters that can break JSON parsing
                     import re
-                    response_text = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', response_text)
-                    
+
+                    response_text = re.sub(r"[\x00-\x1f\x7f-\x9f]", "", response_text)
+
                     # Parse JSON
                     result_data = json.loads(response_text.strip())
-                    
+
                     response_time = time.time() - start_time
                     return {
-                        'success': True,
-                        'data': result_data,
-                        'message': f'Successfully generated structured output',
-                        'response_time': response_time,
-                        'retries_used': attempt
+                        "success": True,
+                        "data": result_data,
+                        "message": f"Successfully generated structured output",
+                        "response_time": response_time,
+                        "retries_used": attempt,
                     }
-                    
+
                 except json.JSONDecodeError as e:
                     if attempt == max_retries - 1:
                         response_time = time.time() - start_time
                         return {
-                            'success': False,
-                            'data': None,
-                            'message': f'JSON parsing failed: {str(e)}',
-                            'response_time': response_time,
-                            'retries_used': attempt + 1
+                            "success": False,
+                            "data": None,
+                            "message": f"JSON parsing failed: {str(e)}",
+                            "response_time": response_time,
+                            "retries_used": attempt + 1,
                         }
-                    time.sleep(2 ** attempt)  # Exponential backoff
+                    time.sleep(2**attempt)  # Exponential backoff
                     continue
-                    
+
         except Exception as e:
             if attempt == max_retries - 1:
                 response_time = time.time() - start_time
                 return {
-                    'success': False,
-                    'data': None,
-                    'message': f'API error: {str(e)}',
-                    'response_time': response_time,
-                    'retries_used': attempt + 1
+                    "success": False,
+                    "data": None,
+                    "message": f"API error: {str(e)}",
+                    "response_time": response_time,
+                    "retries_used": attempt + 1,
                 }
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
             continue
-    
+
     return {
-        'success': False,
-        'data': None,
-        'message': 'All attempts failed',
-        'response_time': time.time() - start_time,
-        'retries_used': max_retries
+        "success": False,
+        "data": None,
+        "message": "All attempts failed",
+        "response_time": time.time() - start_time,
+        "retries_used": max_retries,
     }
 
 
@@ -591,80 +597,101 @@ User Input:
 # MAIN SMART GATEWAY FUNCTION
 # ================================================================================
 
+
 def smart_blog_gateway(user_input: str, **kwargs) -> Dict[str, Any]:
     """
     Smart Gateway for blog creation.
     Analyzes user input and routes to appropriate processing path.
-    
+
     Args:
         user_input: User's blog content or request
         **kwargs: Additional parameters like status, preferred_language, etc.
-        
+
     Returns:
         Dictionary with success status and response message
     """
     try:
         # Simple routing logic without complex function calling for compatibility
         print("🤖 Analyzing blog request...")
-        
+
         # Analyze content to determine routing
         content_analysis = analyze_content_completeness(user_input)
-        
+
         # Simple heuristic routing
         needs_rewrite = (
-            content_analysis['needs_rewrite'] or 
-            len(content_analysis['missing_components']) > 0 or
-            content_analysis['word_count'] < 100 or
-            not content_analysis['has_title']
+            content_analysis["needs_rewrite"]
+            or len(content_analysis["missing_components"]) > 0
+            or content_analysis["word_count"] < 100
+            or not content_analysis["has_title"]
         )
-        
+
         if needs_rewrite:
             # Route to rewrite path
             print("📌 Routing to: rewrite_and_publish_blog")
             result = rewrite_and_publish_blog(
                 raw_content=user_input,
-                status=kwargs.get('status', 'published'),
-                preferred_language=kwargs.get('preferred_language'),
-                guidance=kwargs.get('guidance', ''),
-                **{k: v for k, v in kwargs.items() if k in ['ghost_admin_api_key', 'ghost_api_url', 'gemini_api_key', 'is_test']}
+                status=kwargs.get("status", "published"),
+                preferred_language=kwargs.get("preferred_language"),
+                guidance=kwargs.get("guidance", ""),
+                **{
+                    k: v
+                    for k, v in kwargs.items()
+                    if k
+                    in [
+                        "ghost_admin_api_key",
+                        "ghost_api_url",
+                        "gemini_api_key",
+                        "is_test",
+                    ]
+                },
             )
         else:
             # Route to direct publish
             print("📌 Routing to: direct_publish_blog")
-            
+
             # Extract title from first line if it looks like a title
-            lines = user_input.strip().split('\n')
-            if lines and (lines[0].startswith('#') or len(lines[0]) < 100):
-                title = lines[0].lstrip('#').strip()
-                content = '\n'.join(lines[1:]).strip()
+            lines = user_input.strip().split("\n")
+            if lines and (lines[0].startswith("#") or len(lines[0]) < 100):
+                title = lines[0].lstrip("#").strip()
+                content = "\n".join(lines[1:]).strip()
             else:
                 # Generate a title quickly
                 title = f"Blog Post - {time.strftime('%Y-%m-%d')}"
                 content = user_input
-            
+
             result = direct_publish_blog(
                 title=title,
                 content=content,
-                status=kwargs.get('status', 'published'),
-                tags=kwargs.get('tags', ['Blog']),
-                excerpt=kwargs.get('excerpt', ''),
-                use_generated_feature_image=kwargs.get('use_generated_feature_image', False),
-                target_language=kwargs.get('target_language'),
-                **{k: v for k, v in kwargs.items() if k in ['ghost_admin_api_key', 'ghost_api_url', 'gemini_api_key', 'is_test']}
+                status=kwargs.get("status", "published"),
+                tags=kwargs.get("tags", ["Blog"]),
+                excerpt=kwargs.get("excerpt", ""),
+                use_generated_feature_image=kwargs.get(
+                    "use_generated_feature_image", False
+                ),
+                target_language=kwargs.get("target_language"),
+                **{
+                    k: v
+                    for k, v in kwargs.items()
+                    if k
+                    in [
+                        "ghost_admin_api_key",
+                        "ghost_api_url",
+                        "gemini_api_key",
+                        "is_test",
+                    ]
+                },
             )
-        
+
         return result
-        
+
     except Exception as e:
-        return {
-            'success': False,
-            'response': f"❌ Gateway error: {str(e)}"
-        }
+        return {"success": False, "response": f"❌ Gateway error: {str(e)}"}
 
 
 # ================================================================================
 # UTILITY FUNCTIONS
 # ================================================================================
+
 
 def analyze_content_completeness(content: str) -> Dict[str, Any]:
     """
@@ -672,34 +699,34 @@ def analyze_content_completeness(content: str) -> Dict[str, Any]:
     This is a helper function for understanding content structure.
     """
     analysis = {
-        'has_title': False,
-        'has_structure': False,
-        'word_count': len(content.split()),
-        'has_paragraphs': '\n\n' in content or '\n' in content,
-        'needs_rewrite': False,
-        'missing_components': []
+        "has_title": False,
+        "has_structure": False,
+        "word_count": len(content.split()),
+        "has_paragraphs": "\n\n" in content or "\n" in content,
+        "needs_rewrite": False,
+        "missing_components": [],
     }
-    
+
     # Check for title (usually first line or # header)
-    lines = content.strip().split('\n')
-    if lines and (lines[0].startswith('#') or len(lines[0]) < 100):
-        analysis['has_title'] = True
+    lines = content.strip().split("\n")
+    if lines and (lines[0].startswith("#") or len(lines[0]) < 100):
+        analysis["has_title"] = True
     else:
-        analysis['missing_components'].append('title')
-    
+        analysis["missing_components"].append("title")
+
     # Check for structure
-    if any(line.startswith('#') for line in lines):
-        analysis['has_structure'] = True
-    
+    if any(line.startswith("#") for line in lines):
+        analysis["has_structure"] = True
+
     # Determine if rewrite is needed
-    if analysis['word_count'] < 50:
-        analysis['needs_rewrite'] = True
-        analysis['missing_components'].append('content too brief')
-    
-    if not analysis['has_paragraphs']:
-        analysis['needs_rewrite'] = True
-        analysis['missing_components'].append('proper paragraphs')
-    
+    if analysis["word_count"] < 50:
+        analysis["needs_rewrite"] = True
+        analysis["missing_components"].append("content too brief")
+
+    if not analysis["has_paragraphs"]:
+        analysis["needs_rewrite"] = True
+        analysis["missing_components"].append("proper paragraphs")
+
     return analysis
 
 
@@ -712,7 +739,7 @@ if __name__ == "__main__":
     print("=" * 80)
     print("🎯 GHOST BLOG SMART GATEWAY - Test Examples")
     print("=" * 80)
-    
+
     # Example 1: Complete blog (should route to direct publish)
     example1 = """
 # The Future of AI in Healthcare
@@ -730,14 +757,14 @@ potentially saving millions of lives.
 ## Conclusion
 The AI healthcare revolution is just beginning.
 """
-    
+
     # Example 2: Scattered ideas (should route to rewrite)
     example2 = """
 AI healthcare. Better diagnosis. Saves lives. 
 Need to write about machine learning in hospitals.
 Maybe mention radiology and drug discovery?
 """
-    
+
     # Example 3: Good content but missing title
     example3 = """
 Technology companies are increasingly investing in renewable energy sources.
@@ -746,44 +773,44 @@ Google has been carbon neutral since 2007 and aims to run on carbon-free energy 
 Microsoft has pledged to be carbon negative by 2030.
 These commitments show that big tech is taking climate change seriously.
 """
-    
+
     print("\nChoose an example to test:")
     print("1. Complete blog post (should use direct publish)")
     print("2. Scattered ideas (should use rewrite)")
     print("3. Good content without title (should use rewrite)")
     print("4. Enter custom content")
-    
+
     choice = input("\nEnter choice (1-4): ").strip()
-    
-    if choice == '1':
+
+    if choice == "1":
         test_content = example1
-    elif choice == '2':
+    elif choice == "2":
         test_content = example2
-    elif choice == '3':
+    elif choice == "3":
         test_content = example3
-    elif choice == '4':
+    elif choice == "4":
         test_content = input("\nEnter your blog content:\n")
     else:
         print("Invalid choice")
         exit(1)
-    
+
     # Test the smart gateway
     print("\n" + "=" * 80)
     print("🚀 Processing through Smart Gateway...")
     print("=" * 80)
-    
+
     result = smart_blog_gateway(
         test_content,
-        status='draft',  # Create as draft for testing
-        preferred_language='English'
+        status="draft",  # Create as draft for testing
+        preferred_language="English",
     )
-    
+
     print("\n" + "=" * 80)
     print("📊 RESULT:")
     print("=" * 80)
-    print(result['response'])
-    
-    if result['success'] and 'rewritten_data' in result:
+    print(result["response"])
+
+    if result["success"] and "rewritten_data" in result:
         print("\n📝 Rewritten Content Preview:")
         print("-" * 40)
         print(f"Title: {result['rewritten_data']['title']}")

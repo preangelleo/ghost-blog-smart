@@ -144,14 +144,15 @@ Professional blog header image, high resolution, sharp focus on main subject, cl
 
 Now analyze the provided blog information (title, excerpt, and first paragraph) and generate an image description following this exact format."""
 
+
 def generate_blog_image_prompt(blog_content: str, title: str = "") -> str:
     """
     Generate an image prompt from blog content
-    
+
     Args:
         blog_content: The markdown content of the blog post
         title: Optional blog title for additional context
-        
+
     Returns:
         Formatted prompt for image generation
     """
@@ -160,10 +161,10 @@ def generate_blog_image_prompt(blog_content: str, title: str = "") -> str:
     if title:
         full_context = f"Blog Title: {title}\n\n"
     full_context += f"Blog Content:\n{blog_content[:2000]}"  # Limit content length
-    
+
     # Create the full instruction
     full_prompt = f"{BLOG_TO_IMAGE_SYSTEM_PROMPT}\n\n{full_context}"
-    
+
     return full_prompt
 
 
@@ -175,7 +176,7 @@ if __name__ == "__main__":
 AI is transforming every industry from healthcare to finance. 
 Machine learning algorithms are becoming more sophisticated...
     """
-    
+
     prompt = generate_blog_image_prompt(example_blog, "The Future of AI")
     print("Generated prompt length:", len(prompt))
     print("\nFirst 500 chars of prompt:")

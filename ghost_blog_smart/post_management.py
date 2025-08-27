@@ -17,25 +17,25 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Default credentials from environment
-GHOST_ADMIN_API_KEY = os.getenv('GHOST_ADMIN_API_KEY')
-GHOST_API_URL = os.getenv('GHOST_API_URL')
+GHOST_ADMIN_API_KEY = os.getenv("GHOST_ADMIN_API_KEY")
+GHOST_API_URL = os.getenv("GHOST_API_URL")
 
 
 def get_ghost_posts_advanced(**kwargs) -> Dict[str, Any]:
     """
     Advanced post listing with enhanced filtering options
-    
+
     Parameters:
         # Pagination & Limits
         limit (int): Number of posts per page (default: 15, max: all)
         page (int): Page number for pagination (default: 1)
         get_all (bool): Get all posts ignoring pagination (default: False)
-        
+
         # Status & Visibility Filters
         status (str): 'published', 'draft', 'scheduled', 'all' (default: 'all')
         visibility (str): 'public', 'members', 'paid', 'all' (default: 'all')
         featured (bool): Filter by featured status (optional)
-        
+
         # Date Range Filters
         published_after (str/datetime): Posts published after this date
         published_before (str/datetime): Posts published before this date
@@ -43,24 +43,24 @@ def get_ghost_posts_advanced(**kwargs) -> Dict[str, Any]:
         created_before (str/datetime): Posts created before this date
         updated_after (str/datetime): Posts updated after this date
         updated_before (str/datetime): Posts updated before this date
-        
+
         # Content Filters
         tag (str): Filter by specific tag slug
         author (str): Filter by author slug
         search (str): Search in title and content
-        
+
         # Sorting
         order (str): Sort order 'published_at DESC', 'created_at ASC', etc.
-        
+
         # Output Options
         fields (list): Specific fields to include
         include_content (bool): Include full content (default: False)
         include_html (bool): Include HTML content (default: False)
-        
+
         # API Credentials
         ghost_admin_api_key (str): Override env Ghost API key
         ghost_api_url (str): Override env Ghost API URL
-    
+
     Returns:
         dict: {
             'success': bool,
@@ -72,168 +72,168 @@ def get_ghost_posts_advanced(**kwargs) -> Dict[str, Any]:
     """
     try:
         # Get API credentials
-        admin_key = kwargs.get('ghost_admin_api_key') or GHOST_ADMIN_API_KEY
-        api_url = kwargs.get('ghost_api_url') or GHOST_API_URL
-        
+        admin_key = kwargs.get("ghost_admin_api_key") or GHOST_ADMIN_API_KEY
+        api_url = kwargs.get("ghost_api_url") or GHOST_API_URL
+
         if not admin_key or not api_url:
-            return {'success': False, 'message': 'Ghost API credentials not provided'}
-        
+            return {"success": False, "message": "Ghost API credentials not provided"}
+
         # Parse admin API key
-        if ':' not in admin_key:
-            return {'success': False, 'message': 'Invalid admin API key format'}
-        
-        id, secret = admin_key.split(':')
-        
+        if ":" not in admin_key:
+            return {"success": False, "message": "Invalid admin API key format"}
+
+        id, secret = admin_key.split(":")
+
         # Generate JWT token
         iat = int(time.time())
         exp = iat + 5 * 60
-        
-        header = {'alg': 'HS256', 'typ': 'JWT', 'kid': id}
-        payload = {'iat': iat, 'exp': exp, 'aud': '/admin/'}
-        
-        ghost_token = jwt.encode(payload, bytes.fromhex(secret), algorithm='HS256', headers=header)
-        
+
+        header = {"alg": "HS256", "typ": "JWT", "kid": id}
+        payload = {"iat": iat, "exp": exp, "aud": "/admin/"}
+
+        ghost_token = jwt.encode(
+            payload, bytes.fromhex(secret), algorithm="HS256", headers=header
+        )
+
         # Build query parameters
         params = {}
-        
+
         # Pagination
-        if kwargs.get('get_all'):
-            params['limit'] = 'all'
+        if kwargs.get("get_all"):
+            params["limit"] = "all"
         else:
-            params['limit'] = kwargs.get('limit', 15)
-            params['page'] = kwargs.get('page', 1)
-        
+            params["limit"] = kwargs.get("limit", 15)
+            params["page"] = kwargs.get("page", 1)
+
         # Build filters
         filters = []
-        
+
         # Status filter
-        status = kwargs.get('status', 'all')
-        if status != 'all':
-            filters.append(f'status:{status}')
-        
+        status = kwargs.get("status", "all")
+        if status != "all":
+            filters.append(f"status:{status}")
+
         # Visibility filter
-        visibility = kwargs.get('visibility', 'all')
-        if visibility != 'all':
-            filters.append(f'visibility:{visibility}')
-        
+        visibility = kwargs.get("visibility", "all")
+        if visibility != "all":
+            filters.append(f"visibility:{visibility}")
+
         # Featured filter
-        if 'featured' in kwargs:
+        if "featured" in kwargs:
             filters.append(f'featured:{str(kwargs["featured"]).lower()}')
-        
+
         # Date range filters
         date_filters = {
-            'published_after': 'published_at:>',
-            'published_before': 'published_at:<',
-            'created_after': 'created_at:>',
-            'created_before': 'created_at:<',
-            'updated_after': 'updated_at:>',
-            'updated_before': 'updated_at:<'
+            "published_after": "published_at:>",
+            "published_before": "published_at:<",
+            "created_after": "created_at:>",
+            "created_before": "created_at:<",
+            "updated_after": "updated_at:>",
+            "updated_before": "updated_at:<",
         }
-        
+
         for key, ghost_filter in date_filters.items():
             if key in kwargs:
                 date_value = kwargs[key]
                 # Convert datetime to ISO format
-                if hasattr(date_value, 'isoformat'):
+                if hasattr(date_value, "isoformat"):
                     date_value = date_value.isoformat()
                 # Ensure proper format
-                if 'T' not in date_value:
-                    date_value += 'T00:00:00.000Z'
-                filters.append(f'{ghost_filter}\'{date_value}\'')
-        
+                if "T" not in date_value:
+                    date_value += "T00:00:00.000Z"
+                filters.append(f"{ghost_filter}'{date_value}'")
+
         # Tag filter
-        if 'tag' in kwargs:
+        if "tag" in kwargs:
             filters.append(f'tag:{kwargs["tag"]}')
-        
+
         # Author filter
-        if 'author' in kwargs:
+        if "author" in kwargs:
             filters.append(f'author:{kwargs["author"]}')
-        
+
         # Combine filters
         if filters:
-            params['filter'] = '+'.join(filters)
-        
+            params["filter"] = "+".join(filters)
+
         # Search
-        if 'search' in kwargs:
-            params['search'] = kwargs['search']
-        
+        if "search" in kwargs:
+            params["search"] = kwargs["search"]
+
         # Sorting
-        if 'order' in kwargs:
-            params['order'] = kwargs['order']
+        if "order" in kwargs:
+            params["order"] = kwargs["order"]
         else:
-            params['order'] = 'published_at DESC'
-        
+            params["order"] = "published_at DESC"
+
         # Include options
-        includes = ['tags', 'authors']
-        if kwargs.get('include_content'):
-            includes.append('mobiledoc')
-        params['include'] = ','.join(includes)
-        
+        includes = ["tags", "authors"]
+        if kwargs.get("include_content"):
+            includes.append("mobiledoc")
+        params["include"] = ",".join(includes)
+
         # Formats
         formats = []
-        if kwargs.get('include_html'):
-            formats.append('html')
-        if kwargs.get('include_content'):
-            formats.append('mobiledoc')
+        if kwargs.get("include_html"):
+            formats.append("html")
+        if kwargs.get("include_content"):
+            formats.append("mobiledoc")
         if formats:
-            params['formats'] = ','.join(formats)
-        
+            params["formats"] = ",".join(formats)
+
         # Specific fields
-        if 'fields' in kwargs:
-            params['fields'] = ','.join(kwargs['fields'])
-        
+        if "fields" in kwargs:
+            params["fields"] = ",".join(kwargs["fields"])
+
         # Make request
         headers = {
-            'Authorization': f'Ghost {ghost_token}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Ghost {ghost_token}",
+            "Content-Type": "application/json",
         }
-        
+
         response = requests.get(
-            f'{api_url}/ghost/api/admin/posts/',
-            headers=headers,
-            params=params
+            f"{api_url}/ghost/api/admin/posts/", headers=headers, params=params
         )
-        
+
         if response.status_code == 200:
             data = response.json()
-            meta = data.get('meta', {})
-            posts = data.get('posts', [])
-            
+            meta = data.get("meta", {})
+            posts = data.get("posts", [])
+
             # Enhanced response
             result = {
-                'success': True,
-                'posts': posts,
-                'total': meta.get('pagination', {}).get('total', len(posts)),
-                'pages': meta.get('pagination', {}).get('pages', 1),
-                'page': meta.get('pagination', {}).get('page', 1),
-                'limit': meta.get('pagination', {}).get('limit', len(posts)),
-                'meta': meta
+                "success": True,
+                "posts": posts,
+                "total": meta.get("pagination", {}).get("total", len(posts)),
+                "pages": meta.get("pagination", {}).get("pages", 1),
+                "page": meta.get("pagination", {}).get("page", 1),
+                "limit": meta.get("pagination", {}).get("limit", len(posts)),
+                "meta": meta,
             }
-            
+
             # Add summary info
             if posts:
-                result['summary'] = {
-                    'first_post_date': posts[-1].get('published_at'),
-                    'last_post_date': posts[0].get('published_at'),
-                    'post_count': len(posts)
+                result["summary"] = {
+                    "first_post_date": posts[-1].get("published_at"),
+                    "last_post_date": posts[0].get("published_at"),
+                    "post_count": len(posts),
                 }
-            
+
             return result
         else:
             return {
-                'success': False,
-                'message': f'Failed to get posts: {response.status_code}',
-                'error': response.text
+                "success": False,
+                "message": f"Failed to get posts: {response.status_code}",
+                "error": response.text,
             }
-            
+
     except Exception as e:
-        return {'success': False, 'message': f'Error getting posts: {str(e)}'}
+        return {"success": False, "message": f"Error getting posts: {str(e)}"}
 
 
 def get_ghost_post_details(post_id: str, **kwargs) -> Dict[str, Any]:
     """
     Get complete details of a specific Ghost post by ID
-    
+
     Parameters:
         post_id (str): The Ghost post ID
         include_html (bool): Include HTML content (default: True)
@@ -243,7 +243,7 @@ def get_ghost_post_details(post_id: str, **kwargs) -> Dict[str, Any]:
         include_count (bool): Include view count stats (default: False)
         ghost_admin_api_key (str): Override env Ghost API key
         ghost_api_url (str): Override env Ghost API URL
-    
+
     Returns:
         dict: {
             'success': bool,
@@ -253,122 +253,125 @@ def get_ghost_post_details(post_id: str, **kwargs) -> Dict[str, Any]:
     """
     try:
         # Get API credentials
-        admin_key = kwargs.get('ghost_admin_api_key') or GHOST_ADMIN_API_KEY
-        api_url = kwargs.get('ghost_api_url') or GHOST_API_URL
-        
+        admin_key = kwargs.get("ghost_admin_api_key") or GHOST_ADMIN_API_KEY
+        api_url = kwargs.get("ghost_api_url") or GHOST_API_URL
+
         if not admin_key or not api_url:
-            return {'success': False, 'message': 'Ghost API credentials not provided'}
-        
+            return {"success": False, "message": "Ghost API credentials not provided"}
+
         # Parse admin API key
-        if ':' not in admin_key:
-            return {'success': False, 'message': 'Invalid admin API key format'}
-        
-        id, secret = admin_key.split(':')
-        
+        if ":" not in admin_key:
+            return {"success": False, "message": "Invalid admin API key format"}
+
+        id, secret = admin_key.split(":")
+
         # Generate JWT token
         iat = int(time.time())
         exp = iat + 5 * 60
-        
-        header = {'alg': 'HS256', 'typ': 'JWT', 'kid': id}
-        payload = {'iat': iat, 'exp': exp, 'aud': '/admin/'}
-        
-        ghost_token = jwt.encode(payload, bytes.fromhex(secret), algorithm='HS256', headers=header)
-        
+
+        header = {"alg": "HS256", "typ": "JWT", "kid": id}
+        payload = {"iat": iat, "exp": exp, "aud": "/admin/"}
+
+        ghost_token = jwt.encode(
+            payload, bytes.fromhex(secret), algorithm="HS256", headers=header
+        )
+
         # Build query parameters
         includes = []
-        if kwargs.get('include_tags', True):
-            includes.append('tags')
-        if kwargs.get('include_authors', True):
-            includes.append('authors')
-        if kwargs.get('include_count', False):
-            includes.append('count.posts')
-        
+        if kwargs.get("include_tags", True):
+            includes.append("tags")
+        if kwargs.get("include_authors", True):
+            includes.append("authors")
+        if kwargs.get("include_count", False):
+            includes.append("count.posts")
+
         params = {}
         if includes:
-            params['include'] = ','.join(includes)
-        
+            params["include"] = ",".join(includes)
+
         # Formats
         formats = []
-        if kwargs.get('include_html', True):
-            formats.append('html')
-        if kwargs.get('include_mobiledoc', True):
-            formats.append('mobiledoc')
+        if kwargs.get("include_html", True):
+            formats.append("html")
+        if kwargs.get("include_mobiledoc", True):
+            formats.append("mobiledoc")
         if formats:
-            params['formats'] = ','.join(formats)
-        
+            params["formats"] = ",".join(formats)
+
         # Make request
         headers = {
-            'Authorization': f'Ghost {ghost_token}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Ghost {ghost_token}",
+            "Content-Type": "application/json",
         }
-        
+
         response = requests.get(
-            f'{api_url}/ghost/api/admin/posts/{post_id}/',
+            f"{api_url}/ghost/api/admin/posts/{post_id}/",
             headers=headers,
-            params=params
+            params=params,
         )
-        
+
         if response.status_code == 200:
             data = response.json()
-            post = data.get('posts', [{}])[0]
-            
+            post = data.get("posts", [{}])[0]
+
             # Add computed fields for convenience
             if post:
                 # Format dates for readability
-                for date_field in ['published_at', 'created_at', 'updated_at']:
+                for date_field in ["published_at", "created_at", "updated_at"]:
                     if post.get(date_field):
                         # Keep original ISO format
-                        post[f'{date_field}_iso'] = post[date_field]
+                        post[f"{date_field}_iso"] = post[date_field]
                         # Add human-readable format
                         try:
-                            dt = datetime.fromisoformat(post[date_field].replace('Z', '+00:00'))
-                            post[f'{date_field}_formatted'] = dt.strftime('%Y-%m-%d %H:%M:%S')
+                            dt = datetime.fromisoformat(
+                                post[date_field].replace("Z", "+00:00")
+                            )
+                            post[f"{date_field}_formatted"] = dt.strftime(
+                                "%Y-%m-%d %H:%M:%S"
+                            )
                         except:
                             pass
-                
+
                 # Add content preview if full content exists
-                if post.get('html'):
+                if post.get("html"):
                     # Strip HTML tags for preview
                     import re
-                    text = re.sub('<[^<]+?>', '', post['html'])
-                    post['content_preview'] = text[:500] + '...' if len(text) > 500 else text
-                
+
+                    text = re.sub("<[^<]+?>", "", post["html"])
+                    post["content_preview"] = (
+                        text[:500] + "..." if len(text) > 500 else text
+                    )
+
                 # Add word count
-                if post.get('html'):
-                    text = re.sub('<[^<]+?>', '', post['html'])
-                    post['word_count'] = len(text.split())
-            
-            return {
-                'success': True,
-                'post': post
-            }
+                if post.get("html"):
+                    text = re.sub("<[^<]+?>", "", post["html"])
+                    post["word_count"] = len(text.split())
+
+            return {"success": True, "post": post}
         elif response.status_code == 404:
-            return {
-                'success': False,
-                'message': f'Post not found: {post_id}'
-            }
+            return {"success": False, "message": f"Post not found: {post_id}"}
         else:
             return {
-                'success': False,
-                'message': f'Failed to get post details: {response.status_code}',
-                'error': response.text
+                "success": False,
+                "message": f"Failed to get post details: {response.status_code}",
+                "error": response.text,
             }
-            
+
     except Exception as e:
-        return {'success': False, 'message': f'Error getting post details: {str(e)}'}
+        return {"success": False, "message": f"Error getting post details: {str(e)}"}
 
 
 def get_posts_summary(date_from=None, date_to=None, **kwargs) -> Dict[str, Any]:
     """
     Get a summary of posts with basic info for quick overview
-    
+
     Parameters:
         date_from (str/datetime): Start date for filtering
         date_to (str/datetime): End date for filtering
         status (str): Post status filter
         ghost_admin_api_key (str): Override env Ghost API key
         ghost_api_url (str): Override env Ghost API URL
-    
+
     Returns:
         dict: Summary of posts with id, title, status, dates
     """
@@ -377,78 +380,78 @@ def get_posts_summary(date_from=None, date_to=None, **kwargs) -> Dict[str, Any]:
         published_after=date_from,
         published_before=date_to,
         get_all=True,  # Get all posts in range
-        fields=['id', 'title', 'slug', 'status', 'published_at', 'updated_at', 'featured'],
-        status=kwargs.get('status', 'all'),
-        ghost_admin_api_key=kwargs.get('ghost_admin_api_key'),
-        ghost_api_url=kwargs.get('ghost_api_url')
+        fields=[
+            "id",
+            "title",
+            "slug",
+            "status",
+            "published_at",
+            "updated_at",
+            "featured",
+        ],
+        status=kwargs.get("status", "all"),
+        ghost_admin_api_key=kwargs.get("ghost_admin_api_key"),
+        ghost_api_url=kwargs.get("ghost_api_url"),
     )
-    
-    if result['success']:
+
+    if result["success"]:
         # Format for easy viewing
         posts_summary = []
-        for post in result['posts']:
-            posts_summary.append({
-                'id': post.get('id'),
-                'title': post.get('title'),
-                'slug': post.get('slug'),
-                'status': post.get('status'),
-                'featured': post.get('featured', False),
-                'published_at': post.get('published_at'),
-                'updated_at': post.get('updated_at')
-            })
-        
+        for post in result["posts"]:
+            posts_summary.append(
+                {
+                    "id": post.get("id"),
+                    "title": post.get("title"),
+                    "slug": post.get("slug"),
+                    "status": post.get("status"),
+                    "featured": post.get("featured", False),
+                    "published_at": post.get("published_at"),
+                    "updated_at": post.get("updated_at"),
+                }
+            )
+
         return {
-            'success': True,
-            'total_posts': len(posts_summary),
-            'posts': posts_summary,
-            'date_range': {
-                'from': date_from,
-                'to': date_to
-            }
+            "success": True,
+            "total_posts": len(posts_summary),
+            "posts": posts_summary,
+            "date_range": {"from": date_from, "to": date_to},
         }
-    
+
     return result
 
 
 def batch_get_post_details(post_ids: List[str], **kwargs) -> Dict[str, Any]:
     """
     Get details for multiple posts at once
-    
+
     Parameters:
         post_ids (list): List of post IDs to fetch
         include_content (bool): Include full content (default: False)
         ghost_admin_api_key (str): Override env Ghost API key
         ghost_api_url (str): Override env Ghost API URL
-    
+
     Returns:
         dict: Details for all requested posts
     """
-    results = {
-        'success': True,
-        'posts': {},
-        'failed': []
-    }
-    
+    results = {"success": True, "posts": {}, "failed": []}
+
     for post_id in post_ids:
         result = get_ghost_post_details(
             post_id,
-            include_html=kwargs.get('include_content', False),
-            include_mobiledoc=kwargs.get('include_content', False),
-            ghost_admin_api_key=kwargs.get('ghost_admin_api_key'),
-            ghost_api_url=kwargs.get('ghost_api_url')
+            include_html=kwargs.get("include_content", False),
+            include_mobiledoc=kwargs.get("include_content", False),
+            ghost_admin_api_key=kwargs.get("ghost_admin_api_key"),
+            ghost_api_url=kwargs.get("ghost_api_url"),
         )
-        
-        if result['success']:
-            results['posts'][post_id] = result['post']
+
+        if result["success"]:
+            results["posts"][post_id] = result["post"]
         else:
-            results['failed'].append({
-                'id': post_id,
-                'error': result['message']
-            })
-    
-    results['total_fetched'] = len(results['posts'])
-    results['total_failed'] = len(results['failed'])
-    
+            results["failed"].append({"id": post_id, "error": result["message"]})
+
+    results["total_fetched"] = len(results["posts"])
+    results["total_failed"] = len(results["failed"])
+
     return results
 
 
@@ -456,7 +459,7 @@ def find_posts_by_date_pattern(**kwargs) -> Dict[str, Any]:
     """
     Find posts that match specific date patterns
     Useful for finding posts that need date corrections
-    
+
     Parameters:
         year (int): Filter by specific year
         month (int): Filter by specific month (1-12)
@@ -465,20 +468,20 @@ def find_posts_by_date_pattern(**kwargs) -> Dict[str, Any]:
         same_date_time (bool): Find posts with identical publish times
         ghost_admin_api_key (str): Override env Ghost API key
         ghost_api_url (str): Override env Ghost API URL
-    
+
     Returns:
         dict: Posts matching the date pattern
     """
     # Build date range based on parameters
     filters = {}
-    
-    if 'year' in kwargs:
-        year = kwargs['year']
-        filters['published_after'] = f'{year}-01-01T00:00:00.000Z'
-        filters['published_before'] = f'{year}-12-31T23:59:59.999Z'
-        
-        if 'month' in kwargs:
-            month = kwargs['month']
+
+    if "year" in kwargs:
+        year = kwargs["year"]
+        filters["published_after"] = f"{year}-01-01T00:00:00.000Z"
+        filters["published_before"] = f"{year}-12-31T23:59:59.999Z"
+
+        if "month" in kwargs:
+            month = kwargs["month"]
             # Calculate last day of month
             if month == 12:
                 next_month = 1
@@ -486,86 +489,98 @@ def find_posts_by_date_pattern(**kwargs) -> Dict[str, Any]:
             else:
                 next_month = month + 1
                 next_year = year
-            
-            filters['published_after'] = f'{year}-{month:02d}-01T00:00:00.000Z'
-            filters['published_before'] = f'{next_year}-{next_month:02d}-01T00:00:00.000Z'
-            
-            if 'day' in kwargs:
-                day = kwargs['day']
-                filters['published_after'] = f'{year}-{month:02d}-{day:02d}T00:00:00.000Z'
-                filters['published_before'] = f'{year}-{month:02d}-{day:02d}T23:59:59.999Z'
-                
-                if 'hour' in kwargs:
-                    hour = kwargs['hour']
-                    filters['published_after'] = f'{year}-{month:02d}-{day:02d}T{hour:02d}:00:00.000Z'
-                    filters['published_before'] = f'{year}-{month:02d}-{day:02d}T{hour:02d}:59:59.999Z'
-    
+
+            filters["published_after"] = f"{year}-{month:02d}-01T00:00:00.000Z"
+            filters["published_before"] = (
+                f"{next_year}-{next_month:02d}-01T00:00:00.000Z"
+            )
+
+            if "day" in kwargs:
+                day = kwargs["day"]
+                filters["published_after"] = (
+                    f"{year}-{month:02d}-{day:02d}T00:00:00.000Z"
+                )
+                filters["published_before"] = (
+                    f"{year}-{month:02d}-{day:02d}T23:59:59.999Z"
+                )
+
+                if "hour" in kwargs:
+                    hour = kwargs["hour"]
+                    filters["published_after"] = (
+                        f"{year}-{month:02d}-{day:02d}T{hour:02d}:00:00.000Z"
+                    )
+                    filters["published_before"] = (
+                        f"{year}-{month:02d}-{day:02d}T{hour:02d}:59:59.999Z"
+                    )
+
     # Get posts with date filters
     result = get_ghost_posts_advanced(
         **filters,
         get_all=True,
-        fields=['id', 'title', 'slug', 'published_at', 'created_at', 'updated_at'],
-        status='all',
-        ghost_admin_api_key=kwargs.get('ghost_admin_api_key'),
-        ghost_api_url=kwargs.get('ghost_api_url')
+        fields=["id", "title", "slug", "published_at", "created_at", "updated_at"],
+        status="all",
+        ghost_admin_api_key=kwargs.get("ghost_admin_api_key"),
+        ghost_api_url=kwargs.get("ghost_api_url"),
     )
-    
-    if not result['success']:
+
+    if not result["success"]:
         return result
-    
-    posts = result['posts']
-    
+
+    posts = result["posts"]
+
     # Find posts with same date/time if requested
-    if kwargs.get('same_date_time'):
+    if kwargs.get("same_date_time"):
         from collections import defaultdict
+
         date_groups = defaultdict(list)
-        
+
         for post in posts:
-            if post.get('published_at'):
+            if post.get("published_at"):
                 # Group by exact timestamp
-                date_groups[post['published_at']].append(post)
-        
+                date_groups[post["published_at"]].append(post)
+
         # Filter to only groups with multiple posts
         duplicates = {
-            date: posts_list 
-            for date, posts_list in date_groups.items() 
+            date: posts_list
+            for date, posts_list in date_groups.items()
             if len(posts_list) > 1
         }
-        
+
         if duplicates:
             return {
-                'success': True,
-                'duplicate_dates': duplicates,
-                'total_duplicates': sum(len(posts) for posts in duplicates.values())
+                "success": True,
+                "duplicate_dates": duplicates,
+                "total_duplicates": sum(len(posts) for posts in duplicates.values()),
             }
-    
+
     return {
-        'success': True,
-        'posts': posts,
-        'total': len(posts),
-        'date_pattern': kwargs
+        "success": True,
+        "posts": posts,
+        "total": len(posts),
+        "date_pattern": kwargs,
     }
 
 
 # Convenience functions for common operations
 
+
 def get_all_post_ids(**kwargs) -> List[str]:
     """
     Quick function to get just the IDs of all posts
-    
+
     Returns:
         list: List of all post IDs
     """
     result = get_ghost_posts_advanced(
         get_all=True,
-        fields=['id'],
-        status=kwargs.get('status', 'all'),
-        ghost_admin_api_key=kwargs.get('ghost_admin_api_key'),
-        ghost_api_url=kwargs.get('ghost_api_url')
+        fields=["id"],
+        status=kwargs.get("status", "all"),
+        ghost_admin_api_key=kwargs.get("ghost_admin_api_key"),
+        ghost_api_url=kwargs.get("ghost_api_url"),
     )
-    
-    if result['success']:
-        return [post['id'] for post in result['posts']]
+
+    if result["success"]:
+        return [post["id"] for post in result["posts"]]
     return []
 
 
@@ -573,50 +588,50 @@ def get_posts_for_date_update(**kwargs) -> Dict[str, Any]:
     """
     Get posts formatted specifically for date update operations
     Shows current dates and allows for planning date changes
-    
+
     Returns:
         dict: Posts with date information formatted for updates
     """
     result = get_ghost_posts_advanced(
         get_all=True,
-        fields=['id', 'title', 'slug', 'status', 'published_at', 'created_at'],
-        order='published_at ASC',  # Oldest first
-        status=kwargs.get('status', 'published'),
-        ghost_admin_api_key=kwargs.get('ghost_admin_api_key'),
-        ghost_api_url=kwargs.get('ghost_api_url')
+        fields=["id", "title", "slug", "status", "published_at", "created_at"],
+        order="published_at ASC",  # Oldest first
+        status=kwargs.get("status", "published"),
+        ghost_admin_api_key=kwargs.get("ghost_admin_api_key"),
+        ghost_api_url=kwargs.get("ghost_api_url"),
     )
-    
-    if not result['success']:
+
+    if not result["success"]:
         return result
-    
+
     posts_for_update = []
-    for post in result['posts']:
+    for post in result["posts"]:
         post_info = {
-            'id': post['id'],
-            'title': post['title'],
-            'slug': post['slug'],
-            'status': post['status'],
-            'current_published_at': post.get('published_at'),
-            'created_at': post.get('created_at'),
-            'new_published_at': None  # Placeholder for new date
+            "id": post["id"],
+            "title": post["title"],
+            "slug": post["slug"],
+            "status": post["status"],
+            "current_published_at": post.get("published_at"),
+            "created_at": post.get("created_at"),
+            "new_published_at": None,  # Placeholder for new date
         }
-        
+
         # Add formatted dates for readability
-        if post.get('published_at'):
+        if post.get("published_at"):
             try:
-                dt = datetime.fromisoformat(post['published_at'].replace('Z', '+00:00'))
-                post_info['published_date'] = dt.strftime('%Y-%m-%d')
-                post_info['published_time'] = dt.strftime('%H:%M:%S')
+                dt = datetime.fromisoformat(post["published_at"].replace("Z", "+00:00"))
+                post_info["published_date"] = dt.strftime("%Y-%m-%d")
+                post_info["published_time"] = dt.strftime("%H:%M:%S")
             except:
                 pass
-        
+
         posts_for_update.append(post_info)
-    
+
     return {
-        'success': True,
-        'posts': posts_for_update,
-        'total': len(posts_for_update),
-        'instructions': 'Use update_ghost_post() with published_at parameter to update dates'
+        "success": True,
+        "posts": posts_for_update,
+        "total": len(posts_for_update),
+        "instructions": "Use update_ghost_post() with published_at parameter to update dates",
     }
 
 
@@ -624,34 +639,32 @@ if __name__ == "__main__":
     # Example usage
     print("Ghost Blog Post Management Functions")
     print("=" * 60)
-    
+
     # Example 1: Get all posts from last month
     from datetime import datetime, timedelta
+
     last_month = datetime.now() - timedelta(days=30)
-    
+
     print("\n1. Posts from last 30 days:")
-    result = get_posts_summary(
-        date_from=last_month,
-        date_to=datetime.now()
-    )
-    if result['success']:
+    result = get_posts_summary(date_from=last_month, date_to=datetime.now())
+    if result["success"]:
         print(f"   Found {result['total_posts']} posts")
-        for post in result['posts'][:3]:  # Show first 3
+        for post in result["posts"][:3]:  # Show first 3
             print(f"   - {post['title']} ({post['status']})")
-    
+
     # Example 2: Get complete details for a specific post
     print("\n2. Get post details (example with placeholder ID):")
     print("   result = get_ghost_post_details('post_id_here')")
     print("   Returns: Complete post object with all fields")
-    
+
     # Example 3: Find posts with duplicate publish times
     print("\n3. Find posts with same publish times:")
     print("   result = find_posts_by_date_pattern(same_date_time=True)")
-    
+
     # Example 4: Get posts for date updates
     print("\n4. Get posts ready for date updates:")
     print("   result = get_posts_for_date_update()")
     print("   Returns: Posts with current dates ready for bulk updates")
-    
+
     print("\n" + "=" * 60)
     print("✅ Post Management Functions Ready!")
