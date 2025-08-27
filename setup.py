@@ -7,7 +7,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 # Read requirements
 with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+    requirements = [
+        line.strip() for line in fh if line.strip() and not line.startswith("#")
+    ]
     # Remove comments from requirements
     requirements = [req.split("#")[0].strip() for req in requirements]
 
@@ -22,7 +24,7 @@ setup(
     url="https://github.com/preangelleo/ghost-blog-smart",
     packages=find_packages(),
     package_data={
-        'ghost_blog_smart': ['*.py'],
+        "ghost_blog_smart": ["*.py"],
     },
     include_package_data=True,
     classifiers=[
