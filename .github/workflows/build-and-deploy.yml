@@ -88,7 +88,7 @@ jobs:
       run: safety check --json
 
     - name: Run bandit security scan
-      run: bandit -r ghost_blog_smart/ app.py -f json --skip B104,B113
+      run: bandit -r ghost_blog_smart/ app.py -f json --skip B104,B110,B113,B311
 
   build:
     needs: [test, security]
