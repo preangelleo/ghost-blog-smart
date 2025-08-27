@@ -619,3 +619,4 @@ For issues or questions, please open an issue on GitHub.
 ---
 
 Made with ❤️ for the Ghost CMS community
+✨ **This Flask API is now live on GitHub and ready for Docker publishing!**
