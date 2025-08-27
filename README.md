@@ -572,3 +572,4 @@ For issues or questions, please open an issue on GitHub.
 **Made with ❤️ for the Ghost CMS community**
 
 ✨ **Available as both Python Package and REST API with comprehensive Docker support!**
+<!-- Docker Hub sync: Wed Aug 27 17:55:51 JST 2025 -->
