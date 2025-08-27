@@ -1,0 +1,18 @@
+# Core dependencies for Ghost Blog Smart API
+pypinyin>=0.50.0           # Chinese to pinyin conversion
+google-generativeai>=0.8.0  # Gemini AI integration
+markdownify>=0.11.6         # HTML to markdown conversion
+markdown-it-py>=3.0.0       # Markdown parsing
+markdown>=3.5.0             # Markdown processing (missing dependency)
+requests>=2.31.0            # HTTP requests
+PyJWT>=2.8.0                # JWT token generation
+python-dotenv>=1.0.0        # Environment variables
+
+# Image generation dependencies
+google-genai>=1.0.0         # Google Imagen API
+Pillow>=10.0.0              # Image processing
+replicate>=1.0.0            # Replicate Flux API
+
+# Optional dependencies (for future features)
+# flask>=3.0.0              # Flask API framework
+# flask-cors>=4.0.0         # CORS support for API
