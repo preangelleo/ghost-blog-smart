@@ -463,8 +463,9 @@ def get_post_details(post_id):
             return standardize_response(data=result.get("data"))
         else:
             # Return 404 for post not found, 400 for other errors
+            message = result.get("message", "").lower()
             status_code = (
-                404 if "not found" in result.get("message", "").lower() else 400
+                404 if ("not found" in message or "post not found" in message) else 400
             )
             return standardize_response(
                 success=False,
