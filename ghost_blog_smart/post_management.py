@@ -141,8 +141,8 @@ def get_ghost_posts_advanced(**kwargs) -> Dict[str, Any]:
                 # Ensure proper format
                 if "T" not in str(date_value):
                     date_value = str(date_value) + "T00:00:00.000Z"
-                elif not str(date_value).endswith('Z'):
-                    if not str(date_value).endswith('+00:00'):
+                elif not str(date_value).endswith("Z"):
+                    if not str(date_value).endswith("+00:00"):
                         date_value = str(date_value) + "Z"
                 filters.append(f"{ghost_filter}'{date_value}'")
 
@@ -320,10 +320,10 @@ def get_ghost_post_details(post_id: str, **kwargs) -> Dict[str, Any]:
         if response.status_code == 200:
             data = response.json()
             posts = data.get("posts", [])
-            
+
             if not posts:
                 return {"success": False, "message": f"Post not found: {post_id}"}
-                
+
             post = posts[0]
 
             # Add computed fields for convenience
@@ -357,6 +357,7 @@ def get_ghost_post_details(post_id: str, **kwargs) -> Dict[str, Any]:
                 # Add word count
                 if post.get("html"):
                     import re
+
                     text = re.sub("<[^<]+?>", "", post["html"])
                     post["word_count"] = len(text.split())
 
@@ -374,7 +375,9 @@ def get_ghost_post_details(post_id: str, **kwargs) -> Dict[str, Any]:
         return {"success": False, "message": f"Error getting post details: {str(e)}"}
 
 
-def get_posts_summary(days=None, date_from=None, date_to=None, **kwargs) -> Dict[str, Any]:
+def get_posts_summary(
+    days=None, date_from=None, date_to=None, **kwargs
+) -> Dict[str, Any]:
     """
     Get a summary of posts with basic info for quick overview - FIXED VERSION
 
@@ -421,7 +424,7 @@ def get_posts_summary(days=None, date_from=None, date_to=None, **kwargs) -> Dict
 
         if result.get("success"):
             posts = result.get("posts", [])
-            
+
             # Handle empty posts list
             if not posts:
                 return {
@@ -429,7 +432,7 @@ def get_posts_summary(days=None, date_from=None, date_to=None, **kwargs) -> Dict
                     "total_posts": 0,
                     "posts": [],
                     "date_range": {"from": date_from, "to": date_to},
-                    "message": "No posts found in the specified date range"
+                    "message": "No posts found in the specified date range",
                 }
 
             # Format for easy viewing
@@ -451,17 +454,22 @@ def get_posts_summary(days=None, date_from=None, date_to=None, **kwargs) -> Dict
                 "success": True,
                 "total_posts": len(posts_summary),
                 "posts": posts_summary,
-                "date_range": {"from": str(date_from) if date_from else None, "to": str(date_to) if date_to else None},
+                "date_range": {
+                    "from": str(date_from) if date_from else None,
+                    "to": str(date_to) if date_to else None,
+                },
                 "filters_applied": {
                     "days": days,
-                    "status": kwargs.get("status", "all")
-                }
+                    "status": kwargs.get("status", "all"),
+                },
             }
         else:
             return {
                 "success": False,
-                "message": result.get("message", "Failed to retrieve posts for summary"),
-                "error": result.get("error")
+                "message": result.get(
+                    "message", "Failed to retrieve posts for summary"
+                ),
+                "error": result.get("error"),
             }
 
     except Exception as e:
@@ -485,10 +493,10 @@ def batch_get_post_details(post_ids: List[str], **kwargs) -> Dict[str, Any]:
         # Validate input
         if not post_ids or not isinstance(post_ids, list):
             return {
-                "success": False, 
+                "success": False,
                 "message": "post_ids must be a non-empty list",
                 "posts": {},
-                "failed": []
+                "failed": [],
             }
 
         results = {"success": True, "posts": {}, "failed": []}
@@ -498,10 +506,12 @@ def batch_get_post_details(post_ids: List[str], **kwargs) -> Dict[str, Any]:
 
         if not valid_post_ids:
             return {
-                "success": False, 
+                "success": False,
                 "message": "No valid post IDs provided",
                 "posts": {},
-                "failed": [{"id": "invalid", "error": "All post IDs were empty or invalid"}]
+                "failed": [
+                    {"id": "invalid", "error": "All post IDs were empty or invalid"}
+                ],
             }
 
         for post_id in valid_post_ids:
@@ -517,23 +527,27 @@ def batch_get_post_details(post_ids: List[str], **kwargs) -> Dict[str, Any]:
                 if result.get("success"):
                     results["posts"][post_id] = result["post"]
                 else:
-                    results["failed"].append({"id": post_id, "error": result.get("message", "Unknown error")})
-                    
+                    results["failed"].append(
+                        {"id": post_id, "error": result.get("message", "Unknown error")}
+                    )
+
             except Exception as e:
-                results["failed"].append({"id": post_id, "error": f"Exception: {str(e)}"})
+                results["failed"].append(
+                    {"id": post_id, "error": f"Exception: {str(e)}"}
+                )
 
         results["total_fetched"] = len(results["posts"])
         results["total_failed"] = len(results["failed"])
         results["total_requested"] = len(valid_post_ids)
 
         return results
-        
+
     except Exception as e:
         return {
             "success": False,
             "message": f"Error in batch operation: {str(e)}",
             "posts": {},
-            "failed": []
+            "failed": [],
         }
 
 
@@ -559,7 +573,9 @@ def find_posts_by_date_pattern(pattern=None, **kwargs) -> Dict[str, Any]:
     try:
         # Build date range based on parameters
         filters = {}
-        limit = kwargs.get("limit", 100)  # Default limit to prevent overwhelming results
+        limit = kwargs.get(
+            "limit", 100
+        )  # Default limit to prevent overwhelming results
 
         # Handle pattern parameter (e.g., "2024", "2024-01", "2024-01-15")
         if pattern:
@@ -578,7 +594,9 @@ def find_posts_by_date_pattern(pattern=None, **kwargs) -> Dict[str, Any]:
                     next_month = month + 1
                     next_year = year
                 filters["published_after"] = f"{year}-{month:02d}-01T00:00:00.000Z"
-                filters["published_before"] = f"{next_year}-{next_month:02d}-01T00:00:00.000Z"
+                filters["published_before"] = (
+                    f"{next_year}-{next_month:02d}-01T00:00:00.000Z"
+                )
             elif len(pattern) == 10:  # Year-month-day
                 filters["published_after"] = f"{pattern}T00:00:00.000Z"
                 filters["published_before"] = f"{pattern}T23:59:59.999Z"
@@ -600,17 +618,27 @@ def find_posts_by_date_pattern(pattern=None, **kwargs) -> Dict[str, Any]:
                     next_year = year
 
                 filters["published_after"] = f"{year}-{month:02d}-01T00:00:00.000Z"
-                filters["published_before"] = f"{next_year}-{next_month:02d}-01T00:00:00.000Z"
+                filters["published_before"] = (
+                    f"{next_year}-{next_month:02d}-01T00:00:00.000Z"
+                )
 
                 if "day" in kwargs:
                     day = kwargs["day"]
-                    filters["published_after"] = f"{year}-{month:02d}-{day:02d}T00:00:00.000Z"
-                    filters["published_before"] = f"{year}-{month:02d}-{day:02d}T23:59:59.999Z"
+                    filters["published_after"] = (
+                        f"{year}-{month:02d}-{day:02d}T00:00:00.000Z"
+                    )
+                    filters["published_before"] = (
+                        f"{year}-{month:02d}-{day:02d}T23:59:59.999Z"
+                    )
 
                     if "hour" in kwargs:
                         hour = kwargs["hour"]
-                        filters["published_after"] = f"{year}-{month:02d}-{day:02d}T{hour:02d}:00:00.000Z"
-                        filters["published_before"] = f"{year}-{month:02d}-{day:02d}T{hour:02d}:59:59.999Z"
+                        filters["published_after"] = (
+                            f"{year}-{month:02d}-{day:02d}T{hour:02d}:00:00.000Z"
+                        )
+                        filters["published_before"] = (
+                            f"{year}-{month:02d}-{day:02d}T{hour:02d}:59:59.999Z"
+                        )
 
         # Get posts with date filters
         result = get_ghost_posts_advanced(
@@ -650,7 +678,9 @@ def find_posts_by_date_pattern(pattern=None, **kwargs) -> Dict[str, Any]:
                 return {
                     "success": True,
                     "duplicate_dates": duplicates,
-                    "total_duplicates": sum(len(posts) for posts in duplicates.values()),
+                    "total_duplicates": sum(
+                        len(posts) for posts in duplicates.values()
+                    ),
                 }
 
         return {
@@ -660,7 +690,7 @@ def find_posts_by_date_pattern(pattern=None, **kwargs) -> Dict[str, Any]:
             "date_pattern": pattern or kwargs,
             "limit_applied": limit,
         }
-        
+
     except Exception as e:
         return {"success": False, "message": f"Error in date pattern search: {str(e)}"}
 
@@ -716,7 +746,7 @@ def get_posts_for_date_update(**kwargs) -> Dict[str, Any]:
 
         posts = result.get("posts", [])
         posts_for_update = []
-        
+
         for post in posts:
             post_info = {
                 "id": post.get("id", ""),
@@ -731,7 +761,9 @@ def get_posts_for_date_update(**kwargs) -> Dict[str, Any]:
             # Add formatted dates for readability
             if post.get("published_at"):
                 try:
-                    dt = datetime.fromisoformat(post["published_at"].replace("Z", "+00:00"))
+                    dt = datetime.fromisoformat(
+                        post["published_at"].replace("Z", "+00:00")
+                    )
                     post_info["published_date"] = dt.strftime("%Y-%m-%d")
                     post_info["published_time"] = dt.strftime("%H:%M:%S")
                 except:
@@ -745,9 +777,12 @@ def get_posts_for_date_update(**kwargs) -> Dict[str, Any]:
             "total": len(posts_for_update),
             "instructions": "Use update_ghost_post() with published_at parameter to update dates",
         }
-        
+
     except Exception as e:
-        return {"success": False, "message": f"Error getting posts for date update: {str(e)}"}
+        return {
+            "success": False,
+            "message": f"Error getting posts for date update: {str(e)}",
+        }
 
 
 if __name__ == "__main__":

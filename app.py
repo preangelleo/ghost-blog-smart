@@ -103,20 +103,27 @@ def safe_call_ghost_function(func, **kwargs):
     """
     try:
         result = func(**kwargs)
-        
+
         # Handle different response formats
         if isinstance(result, dict):
             if result.get("success"):
                 return {"success": True, "data": result}
             else:
-                return {"success": False, "message": result.get("message", "Operation failed"), "error": result.get("error")}
+                return {
+                    "success": False,
+                    "message": result.get("message", "Operation failed"),
+                    "error": result.get("error"),
+                }
         else:
             # Handle non-dict responses
             return {"success": True, "data": {"result": result}}
-            
+
     except Exception as e:
         logger.error(f"Error calling {func.__name__}: {str(e)}")
-        return {"success": False, "message": f"Internal error in {func.__name__}: {str(e)}"}
+        return {
+            "success": False,
+            "message": f"Internal error in {func.__name__}: {str(e)}",
+        }
 
 
 # ============================================================================
@@ -139,7 +146,7 @@ def root():
                 "Batch operations",
                 "Multi-language support",
                 "Enhanced error handling",
-                "Better input validation"
+                "Better input validation",
             ],
             "endpoints": {
                 "health": "/health",
@@ -151,8 +158,8 @@ def root():
                 "Fixed Posts Summary NoneType errors",
                 "Enhanced post ID validation",
                 "Better error handling across all endpoints",
-                "Improved input sanitization"
-            ]
+                "Improved input sanitization",
+            ],
         }
     )
 
@@ -199,7 +206,7 @@ def create_post():
         # Sanitize inputs
         data["title"] = str(data["title"]).strip()
         data["content"] = str(data["content"]).strip()
-        
+
         if not data["title"] or not data["content"]:
             return standardize_response(
                 success=False,
@@ -252,7 +259,7 @@ def smart_create_post():
 
         # Sanitize input
         data["user_input"] = str(data["user_input"]).strip()
-        
+
         if not data["user_input"]:
             return standardize_response(
                 success=False,
@@ -299,7 +306,7 @@ def get_posts():
     try:
         # Extract query parameters with validation
         params = {}
-        
+
         # Validate and convert limit
         if request.args.get("limit"):
             try:
@@ -456,7 +463,9 @@ def get_post_details(post_id):
             return standardize_response(data=result.get("data"))
         else:
             # Return 404 for post not found, 400 for other errors
-            status_code = 404 if "not found" in result.get("message", "").lower() else 400
+            status_code = (
+                404 if "not found" in result.get("message", "").lower() else 400
+            )
             return standardize_response(
                 success=False,
                 error="Failed to retrieve post details",
@@ -494,7 +503,7 @@ def update_post(post_id):
             )
 
         data = validate_json()
-        
+
         # Ensure we have some data to update
         if not data:
             return standardize_response(
@@ -634,7 +643,7 @@ def batch_post_details():
             )
 
         post_ids = data["post_ids"]
-        
+
         # Validate post_ids is a list
         if not isinstance(post_ids, list):
             return standardize_response(
@@ -645,8 +654,10 @@ def batch_post_details():
             )
 
         # Validate and clean post IDs
-        valid_post_ids = [str(pid).strip() for pid in post_ids if pid and str(pid).strip()]
-        
+        valid_post_ids = [
+            str(pid).strip() for pid in post_ids if pid and str(pid).strip()
+        ]
+
         if not valid_post_ids:
             return standardize_response(
                 success=False,
@@ -686,7 +697,7 @@ def posts_summary():
     """Get posts summary statistics - FIXED VERSION"""
     try:
         params = {}
-        
+
         # Handle days parameter properly
         if request.args.get("days"):
             try:
@@ -754,13 +765,13 @@ def search_by_date_pattern():
     """Search posts by date pattern - FIXED VERSION"""
     try:
         params = {}
-        
+
         # Get pattern parameter
         if request.args.get("pattern"):
             pattern = str(request.args.get("pattern")).strip()
             if pattern:
                 params["pattern"] = pattern
-        
+
         # Validate and convert limit
         if request.args.get("limit"):
             try:
