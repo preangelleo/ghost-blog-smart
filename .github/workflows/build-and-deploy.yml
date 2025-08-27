@@ -140,6 +140,16 @@ jobs:
           BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
           VCS_REF=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
 
+    - name: Update Docker Hub Description
+      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      uses: peter-evans/dockerhub-description@v4
+      with:
+        username: ${{ env.DOCKER_REGISTRY }}
+        password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+        repository: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+        short-description: 'Ghost CMS blog management with AI-powered features - Python package & REST API'
+        readme-filepath: ./README.md
+
   test-docker-image:
     needs: [build]
     runs-on: ubuntu-latest
