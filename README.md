@@ -2,6 +2,7 @@
 
 🚀 A powerful Python library and REST API for creating and managing Ghost CMS blog posts with AI-powered features including automatic image generation, content formatting, and comprehensive blog management.
 
+[![PyPI version](https://badge.fury.io/py/ghost-blog-smart.svg)](https://badge.fury.io/py/ghost-blog-smart)
 [![Docker Hub](https://img.shields.io/docker/pulls/betashow/ghost-blog-smart-api.svg)](https://hub.docker.com/r/betashow/ghost-blog-smart-api)
 [![GitHub Actions](https://github.com/preangelleo/ghost-blog-smart/workflows/Build%20and%20Deploy%20Ghost%20Blog%20Smart%20API/badge.svg)](https://github.com/preangelleo/ghost-blog-smart/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
