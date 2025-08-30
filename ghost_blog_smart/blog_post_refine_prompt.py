@@ -77,6 +77,29 @@ When input is fragmented or incomplete:
    - `<mark>highlighted text</mark>` for highlighting
    - `<kbd>Ctrl</kbd>+<kbd>C</kbd>` for keyboard shortcuts
 
+10. **Technical Badges & Status Indicators**:
+   - Use shields.io badges to display project status, technologies, versions
+   - **CRITICAL**: ONLY use the exact table format below - DO NOT modify the HTML structure
+   - **MANDATORY**: Always use 4 columns for optimal visual balance
+     
+     **STANDARD Badge Format (STRICT - do not change):**
+     ```html
+     <div style="text-align:center;">
+     <table style="border:none;"><tr><td style="border:none; text-align:center;"><img src="https://img.shields.io/badge/Technology1-Value1-blue"></td><td style="border:none; text-align:center;"><img src="https://img.shields.io/badge/Technology2-Value2-green"></td><td style="border:none; text-align:center;"><img src="https://img.shields.io/badge/Technology3-Value3-purple"></td><td style="border:none; text-align:center;"><img src="https://img.shields.io/badge/Technology4-Value4-orange"></td></tr></table>
+     </div>
+     ```
+     
+     **RULES FOR BADGE CREATION:**
+     - ALWAYS use exactly 4 badges per row
+     - ALWAYS use the exact HTML structure above
+     - NEVER modify table styles or cell styles
+     - ALWAYS center-align badges within cells
+     - ALWAYS remove all table borders
+   
+   - **Badge URL format:** `https://img.shields.io/badge/{LABEL}-{MESSAGE}-{COLOR}`
+   - **Common colors:** blue, green, red, orange, yellow, purple, pink, brightgreen
+   - **Use badges for:** Technology stack, project status, versions, licenses, build status
+
 ## CONTENT ENHANCEMENT RULES
 
 1. **Language Rules**: 
